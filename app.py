@@ -1,10 +1,13 @@
+import os
 from flask import Flask, render_template, request, redirect, url_for, flash
 from werkzeug.utils import secure_filename
-import os
 
 app = Flask(__name__)
-app.secret_key = "change-me"  # needed for flash messages
 
+# ---- Secret key: use environment variable in prod, fallback in dev ----
+app.config["SECRET_KEY"] = os.environ.get("FLASK_SECRET_KEY", "dev-only-change-me")
+
+# ---- Config ----
 UPLOAD_DIR = os.environ.get("UPLOAD_DIR", "/tmp/uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
@@ -21,7 +24,11 @@ def submit():
     model = request.form.get("model")
     uploaded_filename = None
 
-    # Handle file upload only if "Other" was chosen
+    if not dataset or not model:
+        flash("Please choose both dataset and model.")
+        return redirect(url_for("index"))
+
+    # Handle file upload if "Other" dataset selected
     if dataset == "Other":
         file = request.files.get("datafile")
         if not file or file.filename == "":
@@ -32,13 +39,7 @@ def submit():
         file.save(save_path)
         uploaded_filename = fname
 
-    # Basic validation
-    if not dataset or not model:
-        flash("Please choose both dataset and model.")
-        return redirect(url_for("index"))
-
-    # In a real app, enqueue a job here with (dataset, uploaded file path, model)
-    # For now, just show a summary page.
+    # Show summary
     return redirect(url_for("summary", dataset=dataset, model=model, upload=uploaded_filename or ""))
 
 @app.get("/summary")
@@ -48,6 +49,10 @@ def summary():
     upload = request.args.get("upload") or None
     return render_template("summary.html", dataset=dataset, model=model, upload=upload)
 
+# For Cloud Run health checks
+@app.get("/healthz")
+def healthz():
+    return "ok", 200
+
 if __name__ == "__main__":
-    # Local dev
-    app.run(host="0.0.0.0", port=8080, debug=True)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", "8080")), debug=False)

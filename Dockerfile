@@ -4,4 +4,6 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 ENV PORT=8080
+# 1 worker, 8 threads: good default for 1 vCPU Cloud Run
+ENV GUNICORN_CMD_ARGS="--workers=1 --threads=8 --timeout=120"
 CMD ["gunicorn", "-b", ":8080", "app:app"]
