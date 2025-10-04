@@ -1,38 +1,85 @@
 <!doctype html>
 <html>
-  <head><meta name="viewport" content="width=device-width, initial-scale=1" /></head>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      .info-box { border: 1px solid #eee; padding: 12px; border-radius: 8px; background: #fafafa; }
+      .muted { color:#666; font-size:.9em; }
+    </style>
+  </head>
   <body>
     <h2>Select Dataset and Model</h2>
     <p>Choose a built-in dataset (K2/TESS/Kepler) or upload your own CSV/Parquet. Then pick a model to use.</p>
-    {% with messages = get_flashed_messages() %}{% if messages %}<p style="color:red">{{ messages[0] }}</p>{% endif %}{% endwith %}
+
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}<p style="color:red">{{ messages[0] }}</p>{% endif %}
+    {% endwith %}
+
     <form action="/submit" method="post" enctype="multipart/form-data">
       <label><strong>Dataset</strong></label><br>
       <select id="dataset" name="dataset" onchange="onDatasetChange()" required>
         <option value="">-- choose dataset --</option>
         {% for d in datasets %}<option value="{{ d }}">{{ d }}</option>{% endfor %}
       </select>
+
       <div id="fileRow" style="display:none; margin-top:8px">
         <label><strong>Upload your dataset</strong> (CSV or Parquet):</label>
         <input type="file" name="datafile" accept=".csv,.parquet">
-        <div style="color:#666;font-size:.9em">Only required when "Other" is selected.</div>
+        <div class="muted">Only required when "Other" is selected.</div>
       </div>
+
       <div id="modelRow" style="display:none; margin-top:12px">
         <label><strong>Model</strong></label><br>
-        <select name="model" required>
+        <select id="model" name="model" onchange="onModelChange()" required>
           <option value="">-- choose model --</option>
           {% for m in models %}<option value="{{ m }}">{{ m }}</option>{% endfor %}
         </select>
+
+        <!-- Model details appear here -->
+        <div id="modelInfo" class="info-box" style="display:none; margin-top:12px">
+          <div id="modelSummary" class="muted"></div>
+          <ul style="margin-top:8px">
+            <li><strong>Pros:</strong> <span id="modelPros"></span></li>
+            <li><strong>Cons:</strong> <span id="modelCons"></span></li>
+          </ul>
+        </div>
       </div>
+
       <p><button type="submit" style="margin-top:12px">Continue</button></p>
     </form>
+
     <script>
-      function onDatasetChange(){
+      // Passed in from Flask
+      const MODEL_DESCRIPTIONS = {{ model_descriptions | tojson }};
+
+      function onDatasetChange() {
         const ds = document.getElementById('dataset').value;
-        document.getElementById('fileRow').style.display = (ds==='Other')?'block':'none';
-        document.getElementById('modelRow').style.display = (ds?'block':'none');
+        document.getElementById('fileRow').style.display = (ds === 'Other') ? 'block' : 'none';
+        document.getElementById('modelRow').style.display = (ds ? 'block' : 'none');
+        // If dataset cleared, also hide model info
+        if (!ds) { document.getElementById('modelInfo').style.display = 'none'; }
       }
-      onDatasetChange();
-      document.getElementById('dataset').addEventListener('change', onDatasetChange);
+
+      function onModelChange() {
+        const sel = document.getElementById('model');
+        const model = sel.value;
+        const box = document.getElementById('modelInfo');
+        if (MODEL_DESCRIPTIONS[model]) {
+          const info = MODEL_DESCRIPTIONS[model];
+          document.getElementById('modelSummary').textContent = info.summary || '';
+          document.getElementById('modelPros').textContent = (info.pros || []).join(', ');
+          document.getElementById('modelCons').textContent = (info.cons || []).join(', ');
+          box.style.display = 'block';
+        } else {
+          box.style.display = 'none';
+        }
+      }
+
+      // Initialize on first load
+      window.addEventListener('DOMContentLoaded', () => {
+        onDatasetChange();
+        onModelChange();
+      });
     </script>
   </body>
 </html>

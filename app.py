@@ -1,10 +1,8 @@
-
 import os, io, json, uuid, tempfile
 from flask import Flask, render_template, request, redirect, url_for, flash, session, send_file, make_response
 from werkzeug.utils import secure_filename
 import pandas as pd
 
-# ML & utils
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.impute import SimpleImputer
@@ -17,9 +15,6 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.feature_selection import SelectFromModel
 import joblib
 
-
-
-# Optional GCS
 USE_GCS = False
 try:
     from google.cloud import storage
@@ -27,8 +22,6 @@ try:
     USE_GCS = True
 except Exception:
     USE_GCS = False
-
-
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.environ.get("FLASK_SECRET_KEY", "dev_thingies")
@@ -181,10 +174,15 @@ def parse_params(model_name: str, form) -> dict:
             params[name] = val
     return params
 
+
 @app.get("/")
 def index():
-    return render_template("index.html", datasets=DATASETS, models=MODELS)
-
+    return render_template(
+        "index.html",
+        datasets=DATASETS,
+        models=MODELS,
+        model_descriptions=MODEL_DESCRIPTIONS,
+    )
 @app.post("/submit")
 def submit():
     dataset = request.form.get("dataset")
