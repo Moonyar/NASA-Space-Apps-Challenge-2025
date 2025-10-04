@@ -1,19 +1,19 @@
-
 <!doctype html>
 <html>
   <body>
     <h2>Select columns — {{ dataset }} ({{ model }})</h2>
+    <p style="color:#555">{{ help_text }}</p>
     <form method="post" action="/columns">
       <h3>Target column</h3>
       <select name="target" required>
         <option value="">-- choose target --</option>
         {% for c in columns %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
       </select>
-      <h3>Feature columns</h3>
-      {% for c in columns %}
-        <label><input type="checkbox" name="features" value="{{ c }}"> {{ c }}</label><br>
-      {% endfor %}
-      <p><button type="submit">Next: Hyperparameters</button></p>
+      <h3 style="margin-top:14px">Feature columns</h3>
+      <div style="max-height:300px; overflow:auto; border:1px solid #ddd; padding:8px;">
+        {% for c in columns %}<label><input type="checkbox" name="features" value="{{ c }}"> {{ c }}</label><br>{% endfor %}
+      </div>
+      <p><button type="submit" style="margin-top:12px">Next: Hyperparameters</button></p>
     </form>
   </body>
 </html>

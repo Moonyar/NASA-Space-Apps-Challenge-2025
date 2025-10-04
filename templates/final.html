@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html>
   <body>
@@ -7,9 +6,38 @@
     <p><strong>Model:</strong> {{ summary.model }}</p>
     <p><strong>Target:</strong> {{ summary.target }}</p>
     <p><strong>Features ({{ summary.features|length }}):</strong> {{ summary.features|join(", ") }}</p>
-    <h3>Hyperparameters</h3>
+    <h3>Hyperparameters & options</h3>
     <pre>{{ summary.params | tojson(indent=2) }}</pre>
-    <p>Next: we can persist this model to Cloud Storage and expose a /predict endpoint.</p>
-    <p><a href="/">← Start over</a></p>
+    {% if summary.fs_method and summary.fs_method != 'none' %}
+      <p><strong>Feature selection:</strong> {{ summary.fs_method }} (C={{ summary.fs_C }})</p>
+    {% endif %}
+    <hr>
+    <h2>Make predictions</h2>
+    <h3>Single row</h3>
+    <form method="post" action="/predict_one">
+      {% for f in features %}
+        <div style="margin-bottom:8px">
+          <label><strong>{{ f }}</strong></label><br>
+          {% if feature_types.get(f) == 'num' %}
+            <input type="number" step="any" name="{{ f }}">
+          {% else %}
+            <input type="text" name="{{ f }}">
+          {% endif %}
+        </div>
+      {% endfor %}
+      <button type="submit">Predict one</button>
+    </form>
+    {% if single_pred is defined %}
+      <h4>Prediction:</h4><pre>{{ single_pred }}</pre>
+      {% if single_proba %}<h4>Class probabilities:</h4><pre>{{ single_proba | tojson(indent=2) }}</pre>{% endif %}
+    {% endif %}
+    <h3 style="margin-top:24px">Batch CSV</h3>
+    <p>Upload a CSV with these columns: <code>{{ features|join(", ") }}</code></p>
+    <form method="post" action="/predict_csv" enctype="multipart/form-data">
+      <input type="file" name="predict_file" accept=".csv">
+      <button type="submit">Predict CSV</button>
+    </form>
+    <p><a href="/template.csv">Download empty CSV template</a></p>
+    <p style="margin-top:24px"><a href="/">← Start over</a></p>
   </body>
 </html>

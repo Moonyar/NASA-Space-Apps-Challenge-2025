@@ -1,27 +1,29 @@
-
 <!doctype html>
 <html>
+  <head><meta name="viewport" content="width=device-width, initial-scale=1" /></head>
   <body>
     <h2>Select Dataset and Model</h2>
+    <p>Choose a built-in dataset (K2/TESS/Kepler) or upload your own CSV/Parquet. Then pick a model to use.</p>
     {% with messages = get_flashed_messages() %}{% if messages %}<p style="color:red">{{ messages[0] }}</p>{% endif %}{% endwith %}
     <form action="/submit" method="post" enctype="multipart/form-data">
-      <label>Dataset:</label>
+      <label><strong>Dataset</strong></label><br>
       <select id="dataset" name="dataset" onchange="onDatasetChange()" required>
         <option value="">-- choose dataset --</option>
         {% for d in datasets %}<option value="{{ d }}">{{ d }}</option>{% endfor %}
       </select>
-      <div id="fileRow" style="display:none">
-        <label>Upload your dataset (CSV/Parquet):</label>
+      <div id="fileRow" style="display:none; margin-top:8px">
+        <label><strong>Upload your dataset</strong> (CSV or Parquet):</label>
         <input type="file" name="datafile" accept=".csv,.parquet">
+        <div style="color:#666;font-size:.9em">Only required when "Other" is selected.</div>
       </div>
-      <div id="modelRow" style="display:none">
-        <label>Model:</label>
+      <div id="modelRow" style="display:none; margin-top:12px">
+        <label><strong>Model</strong></label><br>
         <select name="model" required>
           <option value="">-- choose model --</option>
           {% for m in models %}<option value="{{ m }}">{{ m }}</option>{% endfor %}
         </select>
       </div>
-      <button type="submit">Continue</button>
+      <p><button type="submit" style="margin-top:12px">Continue</button></p>
     </form>
     <script>
       function onDatasetChange(){

@@ -1,15 +1,16 @@
-
 <!doctype html>
 <html>
   <body>
     <h2>Train/Test Split</h2>
+    <p>Optionally evaluate with a split before training on all data.</p>
     <form method="post" action="/run">
       <label><input type="checkbox" name="do_split" checked> Perform train/test split</label>
-      <div>
+      <div style="margin-top:8px">
         <label>Train size (0.5 to 0.95):</label>
         <input type="number" name="train_size" step="0.05" min="0.5" max="0.95" value="0.8">
+        <div style="color:#666;font-size:.9em">0.8 means 80% train / 20% test. Metrics shown on the next page.</div>
       </div>
-      <p><button type="submit">Run</button></p>
+      <p><button type="submit" style="margin-top:12px">Run</button></p>
     </form>
   </body>
 </html>

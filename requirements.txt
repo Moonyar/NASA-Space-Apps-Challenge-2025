@@ -5,3 +5,4 @@ pyarrow
 gcsfs
 google-cloud-storage
 scikit-learn
+joblib
