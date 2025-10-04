@@ -1,6 +1,13 @@
 
 <!doctype html>
 <html>
+  <head>
+    <style>
+      .loading { display: none; }
+      .error { color: red; }
+      .success { color: green; }
+    </style>
+  </head>
   <body>
     <h2>Review & Confirm</h2>
     <p><strong>Dataset:</strong> {{ dataset }}</p>
@@ -10,7 +17,46 @@
     <p><strong>Features ({{ feature_cols|length }}):</strong> {{ feature_cols|join(", ") }}</p>
     <h3>Hyperparameters</h3>
     <pre>{{ params | tojson(indent=2) }}</pre>
-    <p>Next step: enqueue a background training/prediction job with these settings.</p>
+    
+    <div id="status"></div>
+    <button id="trainBtn" onclick="trainModel()">🚀 Train Model</button>
+    <div class="loading" id="loading">Training in progress... Please wait.</div>
     <p><a href="/">← Start over</a></p>
+
+    <script>
+      async function trainModel() {
+        const btn = document.getElementById('trainBtn');
+        const loading = document.getElementById('loading');
+        const status = document.getElementById('status');
+        
+        btn.disabled = true;
+        loading.style.display = 'block';
+        status.innerHTML = '';
+        
+        try {
+          const response = await fetch('/train', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+          });
+          
+          const data = await response.json();
+          
+          if (data.success) {
+            status.innerHTML = '<p class="success">✓ Training completed successfully!</p>';
+            setTimeout(() => {
+              window.location.href = '/results';
+            }, 1000);
+          } else {
+            status.innerHTML = `<p class="error">Error: ${data.error}</p>`;
+            btn.disabled = false;
+          }
+        } catch (error) {
+          status.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+          btn.disabled = false;
+        } finally {
+          loading.style.display = 'none';
+        }
+      }
+    </script>
   </body>
 </html>

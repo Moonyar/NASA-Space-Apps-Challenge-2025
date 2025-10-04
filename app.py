@@ -1,8 +1,9 @@
 
 import os, io, json
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 from werkzeug.utils import secure_filename
 import pandas as pd
+from models import get_model
 
 # Optional: enable GCS uploads (requires google-cloud-storage + IAM + GCS_BUCKET env)
 USE_GCS = False
@@ -200,6 +201,59 @@ def review():
         target_col=session.get("target_col"),
         params=session.get("params", {})
     )
+
+
+@app.post("/train")
+def train():
+    """Train the model with selected parameters"""
+    try:
+        # Get all session data
+        model_name = session.get("model")
+        dataset_uri = session.get("dataset_uri")
+        feature_cols = session.get("feature_cols", [])
+        target_col = session.get("target_col")
+        params = session.get("params", {})
+        
+        if not all([model_name, dataset_uri, feature_cols, target_col]):
+            return jsonify({"error": "Missing required session data"}), 400
+        
+        # Load the full dataset
+        df = _read_table(dataset_uri)
+        
+        # Get model instance
+        model = get_model(model_name, params)
+        
+        # Train model
+        results = model.train(df, feature_cols, target_col)
+        
+        # Store results in session for viewing
+        session["training_results"] = results
+        
+        return jsonify({
+            "success": True,
+            "results": results
+        })
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }), 500
+
+@app.get("/results")
+def results():
+    """Display training results"""
+    training_results = session.get("training_results")
+    if not training_results:
+        flash("No training results found. Please train a model first.")
+        return redirect(url_for("index"))
+    
+    return render_template("results.html", 
+                         results=training_results,
+                         model=session.get("model"))
+
 
 @app.get("/healthz")
 def healthz():

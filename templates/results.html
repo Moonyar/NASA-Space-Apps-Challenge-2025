@@ -1,0 +1,61 @@
+
+<!doctype html>
+<html>
+  <head>
+    <style>
+      table { border-collapse: collapse; margin: 10px 0; }
+      th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+      th { background-color: #f2f2f2; }
+      .metric { margin: 10px 0; }
+      .confusion-matrix { display: inline-block; margin: 10px; }
+    </style>
+  </head>
+  <body>
+    <h2>Training Results — {{ model }}</h2>
+    
+    <div class="metric">
+      <h3>📊 Accuracy</h3>
+      <p><strong>Training Accuracy:</strong> {{ "%.4f"|format(results.train_accuracy) }} ({{ "%.2f"|format(results.train_accuracy * 100) }}%)</p>
+      <p><strong>Testing Accuracy:</strong> {{ "%.4f"|format(results.test_accuracy) }} ({{ "%.2f"|format(results.test_accuracy * 100) }}%)</p>
+      <p><strong>Dataset Split:</strong> {{ results.train_size }} training samples, {{ results.test_size }} testing samples</p>
+    </div>
+    
+    {% if results.feature_importances %}
+    <div class="metric">
+      <h3>🎯 Feature Importances</h3>
+      <table>
+        <tr><th>Feature</th><th>Importance</th></tr>
+        {% for feature, importance in results.feature_importances.items() | sort(attribute='1', reverse=True) %}
+        <tr>
+          <td>{{ feature }}</td>
+          <td>{{ "%.4f"|format(importance) }}</td>
+        </tr>
+        {% endfor %}
+      </table>
+    </div>
+    {% endif %}
+    
+    <div class="metric">
+      <h3>🔢 Confusion Matrix</h3>
+      <table class="confusion-matrix">
+        {% for row in results.confusion_matrix %}
+        <tr>
+          {% for cell in row %}
+          <td>{{ cell }}</td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </table>
+    </div>
+    
+    <div class="metric">
+      <h3>📈 Classification Report</h3>
+      <pre>{{ results.classification_report | tojson(indent=2) }}</pre>
+    </div>
+    
+    <p>
+      <a href="/tune">← Adjust hyperparameters</a> | 
+      <a href="/">Start new experiment</a>
+    </p>
+  </body>
+</html>
