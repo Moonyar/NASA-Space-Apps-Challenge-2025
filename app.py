@@ -17,6 +17,19 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.feature_selection import SelectFromModel
 import joblib
 
+
+
+# Optional GCS
+USE_GCS = False
+try:
+    from google.cloud import storage
+    storage_client = storage.Client()
+    USE_GCS = True
+except Exception:
+    USE_GCS = False
+
+
+
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.environ.get("FLASK_SECRET_KEY", "dev_thingies")
 app.config["MAX_CONTENT_LENGTH"] = int(os.environ.get("MAX_UPLOAD_MB", "50")) * 1024 * 1024
@@ -102,7 +115,7 @@ L1L2_HELP = "Lasso (L1) encourages sparsity—zeroing weaker features. Ridge (L2
 
 def read_table(uri: str, nrows: int = None) -> pd.DataFrame:
     if uri.lower().endswith(".csv"):
-        return pd.read_csv(uri, nrows=nrows)
+        return pd.read_csv(uri, nrows=nrows, comment ="#")
     elif uri.lower().endswith(".parquet") or uri.lower().endswith(".pq"):
         return pd.read_parquet(uri)
     else:
