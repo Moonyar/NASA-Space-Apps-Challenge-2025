@@ -15,3 +15,7 @@ KEPLER = pd.read_csv(DATA_DIR / "KEPLER.csv", sep = "," , comment = "#")
 
 TESS = pd.read_csv(DATA_DIR / "TESS.csv", sep = "," , comment = "#")
 ## ;print(TESS.head(5))
+
+## Start work with kepler data
+print(KEPLER.columns)
+Kepler = KEPLER.drop(columns=["kepid","kepoi_name","kepler_name"])
