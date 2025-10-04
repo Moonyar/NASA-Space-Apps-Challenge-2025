@@ -17,17 +17,8 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.feature_selection import SelectFromModel
 import joblib
 
-# Optional GCS
-USE_GCS = False
-try:
-    from google.cloud import storage
-    storage_client = storage.Client()
-    USE_GCS = True
-except Exception:
-    USE_GCS = False
-
 app = Flask(__name__)
-app.config["SECRET_KEY"] = os.environ.get("FLASK_SECRET_KEY", "dev-only-change-me")
+app.config["SECRET_KEY"] = os.environ.get("FLASK_SECRET_KEY", "dev_thingies")
 app.config["MAX_CONTENT_LENGTH"] = int(os.environ.get("MAX_UPLOAD_MB", "50")) * 1024 * 1024
 
 UPLOAD_DIR = os.environ.get("UPLOAD_DIR", "/tmp/uploads")
@@ -264,7 +255,7 @@ def tune_post():
 
 @app.get("/split")
 def split():
-    return render_template("split.html"))
+    return render_template("split.html")
 
 def evaluate(df, features, target, model_name, params, do_split, train_size, fs_method, fs_C):
     X = df[features]; y = df[target]
@@ -480,3 +471,7 @@ def template_csv():
 @app.get("/healthz")
 def healthz():
     return "ok", 200
+
+
+
+if __name__ == "__main__": app.run(host="127.0.0.1", port=5000, debug=True)
