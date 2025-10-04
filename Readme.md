@@ -11,6 +11,9 @@ Tasks to do
 - [ ] upload/input data to be predicted on
 - [ ] show results with metrics -> abililty to download the csv
 
+- [ ] Add helps + descriptions for everything 
+
+
 Nice to have
 - [ ] give freedom to add columns by feature engineering
 
