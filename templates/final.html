@@ -1,0 +1,15 @@
+
+<!doctype html>
+<html>
+  <body>
+    <h2>Final summary</h2>
+    <p><strong>Rows trained on:</strong> {{ summary.rows }}</p>
+    <p><strong>Model:</strong> {{ summary.model }}</p>
+    <p><strong>Target:</strong> {{ summary.target }}</p>
+    <p><strong>Features ({{ summary.features|length }}):</strong> {{ summary.features|join(", ") }}</p>
+    <h3>Hyperparameters</h3>
+    <pre>{{ summary.params | tojson(indent=2) }}</pre>
+    <p>Next: we can persist this model to Cloud Storage and expose a /predict endpoint.</p>
+    <p><a href="/">← Start over</a></p>
+  </body>
+</html>

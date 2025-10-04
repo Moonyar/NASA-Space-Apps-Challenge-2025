@@ -3,44 +3,34 @@
 <html>
   <body>
     <h2>Select Dataset and Model</h2>
-    {% with messages = get_flashed_messages() %}
-      {% if messages %}<p style="color:red">{{ messages[0] }}</p>{% endif %}
-    {% endwith %}
+    {% with messages = get_flashed_messages() %}{% if messages %}<p style="color:red">{{ messages[0] }}</p>{% endif %}{% endwith %}
     <form action="/submit" method="post" enctype="multipart/form-data">
       <label>Dataset:</label>
       <select id="dataset" name="dataset" onchange="onDatasetChange()" required>
         <option value="">-- choose dataset --</option>
-        {% for d in datasets %}
-          <option value="{{ d }}">{{ d }}</option>
-        {% endfor %}
+        {% for d in datasets %}<option value="{{ d }}">{{ d }}</option>{% endfor %}
       </select>
-
       <div id="fileRow" style="display:none">
         <label>Upload your dataset (CSV/Parquet):</label>
         <input type="file" name="datafile" accept=".csv,.parquet">
       </div>
-
       <div id="modelRow" style="display:none">
         <label>Model:</label>
         <select name="model" required>
           <option value="">-- choose model --</option>
-          {% for m in models %}
-            <option value="{{ m }}">{{ m }}</option>
-          {% endfor %}
+          {% for m in models %}<option value="{{ m }}">{{ m }}</option>{% endfor %}
         </select>
       </div>
-
       <button type="submit">Continue</button>
     </form>
-
     <script>
-      function onDatasetChange() {
+      function onDatasetChange(){
         const ds = document.getElementById('dataset').value;
-        document.getElementById('fileRow').style.display = (ds === 'Other') ? 'block' : 'none';
-        document.getElementById('modelRow').style.display = (ds ? 'block' : 'none');
+        document.getElementById('fileRow').style.display = (ds==='Other')?'block':'none';
+        document.getElementById('modelRow').style.display = (ds?'block':'none');
       }
-      document.getElementById('dataset').addEventListener('change', onDatasetChange);
       onDatasetChange();
+      document.getElementById('dataset').addEventListener('change', onDatasetChange);
     </script>
   </body>
 </html>

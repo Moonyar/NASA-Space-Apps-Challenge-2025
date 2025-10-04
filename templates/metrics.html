@@ -1,0 +1,29 @@
+
+<!doctype html>
+<html>
+  <body>
+    <h2>Evaluation — {{ model }}</h2>
+    {% if did_split %}
+      <p><strong>Train size:</strong> {{ (train_size*100)|round(0) }}% — <strong>Test size:</strong> {{ ((1-train_size)*100)|round(0) }}%</p>
+      <ul>
+        <li>Train rows: {{ results.n_train }}</li>
+        <li>Test rows: {{ results.n_test }}</li>
+        <li>Accuracy: {{ '%.4f' % results.accuracy if results.accuracy is defined else 'n/a' }}</li>
+        <li>Precision: {{ '%.4f' % results.precision if results.precision is defined else 'n/a' }}</li>
+        <li>Recall: {{ '%.4f' % results.recall if results.recall is defined else 'n/a' }}</li>
+        <li>F1: {{ '%.4f' % results.f1 if results.f1 is defined else 'n/a' }}</li>
+        <li>ROC AUC: {{ '%.4f' % results.roc_auc if results.roc_auc is defined else 'n/a' }}</li>
+      </ul>
+      {% if results.confusion_matrix %}
+        <h3>Confusion matrix</h3>
+        <p>Labels: {{ results.confusion_matrix.labels }}</p>
+        <pre>{{ results.confusion_matrix.matrix | tojson(indent=2) }}</pre>
+      {% endif %}
+      <form method="post" action="/train_all"><button type="submit">Train on ALL data</button></form>
+    {% else %}
+      <p>Trained on all data directly (no evaluation split).</p>
+      <form method="post" action="/train_all"><button type="submit">Re-train on ALL data (confirm)</button></form>
+    {% endif %}
+    <p><a href="/">← Start over</a></p>
+  </body>
+</html>

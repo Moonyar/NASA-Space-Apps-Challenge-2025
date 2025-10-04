@@ -1,0 +1,15 @@
+
+<!doctype html>
+<html>
+  <body>
+    <h2>Train/Test Split</h2>
+    <form method="post" action="/run">
+      <label><input type="checkbox" name="do_split" checked> Perform train/test split</label>
+      <div>
+        <label>Train size (0.5 to 0.95):</label>
+        <input type="number" name="train_size" step="0.05" min="0.5" max="0.95" value="0.8">
+      </div>
+      <p><button type="submit">Run</button></p>
+    </form>
+  </body>
+</html>
