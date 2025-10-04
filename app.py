@@ -135,7 +135,7 @@ def columns():
     except Exception as e:
         flash(f"Could not read dataset: {e}")
         return redirect(url_for("index"))
-    return render_template("columns.html", columns=cols, model=model, dataset_uri=dataset_uri)
+    return render_template("columns.html", columns=cols, model=model, dataset=session.get("dataset"))
 
 @app.post("/columns")
 def columns_post():
@@ -194,7 +194,6 @@ def tune_post():
 def review():
     return render_template("review.html",
         dataset=session.get("dataset"),
-        dataset_uri=session.get("dataset_uri"),
         model=session.get("model"),
         feature_cols=session.get("feature_cols", []),
         target_col=session.get("target_col"),
