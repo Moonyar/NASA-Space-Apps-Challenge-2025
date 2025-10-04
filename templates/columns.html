@@ -1,0 +1,24 @@
+
+<!doctype html>
+<html>
+  <body>
+    <h2>Select columns</h2>
+    <p><strong>Dataset URI:</strong> {{ dataset_uri }}</p>
+    <form method="post" action="/columns">
+      <h3>Target column</h3>
+      <select name="target" required>
+        <option value="">-- choose target --</option>
+        {% for c in columns %}
+          <option value="{{ c }}">{{ c }}</option>
+        {% endfor %}
+      </select>
+
+      <h3>Feature columns</h3>
+      {% for c in columns %}
+        <label><input type="checkbox" name="features" value="{{ c }}"> {{ c }}</label><br>
+      {% endfor %}
+
+      <p><button type="submit">Next: Hyperparameters</button></p>
+    </form>
+  </body>
+</html>

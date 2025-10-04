@@ -1,0 +1,16 @@
+
+<!doctype html>
+<html>
+  <body>
+    <h2>Review & Confirm</h2>
+    <p><strong>Dataset:</strong> {{ dataset }}</p>
+    <p><strong>Dataset URI:</strong> {{ dataset_uri }}</p>
+    <p><strong>Model:</strong> {{ model }}</p>
+    <p><strong>Target:</strong> {{ target_col }}</p>
+    <p><strong>Features ({{ feature_cols|length }}):</strong> {{ feature_cols|join(", ") }}</p>
+    <h3>Hyperparameters</h3>
+    <pre>{{ params | tojson(indent=2) }}</pre>
+    <p>Next step: enqueue a background training/prediction job with these settings.</p>
+    <p><a href="/">← Start over</a></p>
+  </body>
+</html>

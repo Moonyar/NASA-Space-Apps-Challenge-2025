@@ -1,0 +1,25 @@
+
+<!doctype html>
+<html>
+  <body>
+    <h2>Hyperparameters — {{ model }}</h2>
+    <form method="post" action="/tune">
+      {% for p in schema %}
+        <div style="margin-bottom:10px">
+          <label><strong>{{ p.name }}</strong></label><br>
+          {% if p.type == 'choice' %}
+            <select name="{{ p.name }}">
+              {% for ch in p.choices %}
+                <option value="{{ ch }}" {% if ch == p.default %}selected{% endif %}>{{ ch }}</option>
+              {% endfor %}
+            </select>
+          {% else %}
+            <input name="{{ p.name }}" value="{{ p.default if p.default is not none else '' }}" placeholder="{{ p.type }}">
+          {% endif %}
+          {% if p.help %}<div style="color:#666;font-size:.9em">{{ p.help }}</div>{% endif %}
+        </div>
+      {% endfor %}
+      <button type="submit">Review selections</button>
+    </form>
+  </body>
+</html>

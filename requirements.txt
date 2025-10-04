@@ -1,2 +1,6 @@
 Flask==3.0.0
 gunicorn
+pandas
+pyarrow
+gcsfs
+google-cloud-storage
