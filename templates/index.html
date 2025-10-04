@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ML Model Predictor</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Machine Learning Model Predictor</h1>
+        <div class="upload-section">
+            <h2>Upload CSV File for Prediction</h2>
+            
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    <div class="flash-messages">
+                        {% for message in messages %}
+                            <div class="alert">{{ message }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+            
+            <form action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="file">Select CSV File:</label>
+                    <input type="file" name="file" id="file" accept=".csv" required>
+                </div>
+                <button type="submit" class="btn-primary">Upload and Predict</button>
+            </form>
+            
+            <div class="info">
+                <h3>Instructions:</h3>
+                <ul>
+                    <li>Upload a CSV file with your data</li>
+                    <li>The last column should be the target variable</li>
+                    <li>The model will automatically feature engineer your data</li>
+                    <li>Results will show evaluation metrics</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
