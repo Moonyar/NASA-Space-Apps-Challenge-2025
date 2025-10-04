@@ -1,0 +1,64 @@
+<!doctype html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; margin: 2rem; }
+      .card { max-width: 680px; margin: 0 auto; padding: 1.25rem 1.5rem; border: 1px solid #ddd; border-radius: 12px; }
+      label { display:block; margin-top: 1rem; font-weight: 600; }
+      select, input[type="file"] { width: 100%; padding: .6rem; margin-top: .35rem; }
+      button { margin-top: 1.25rem; padding: .7rem 1rem; border-radius: 10px; border: 1px solid #444; background: #111; color: white; cursor: pointer; }
+      .hint { color: #666; font-size: .9rem; }
+      .hidden { display: none; }
+      .msg { background:#fff7e6; border:1px solid #ffe08a; padding:.75rem; border-radius:10px; margin-bottom:1rem; }
+    </style>
+    <script>
+      function onDatasetChange() {
+        const ds = document.getElementById('dataset').value;
+        const fileRow = document.getElementById('fileRow');
+        const modelRow = document.getElementById('modelRow');
+        fileRow.classList.toggle('hidden', ds !== 'Other');
+        modelRow.classList.toggle('hidden', ds === '');
+      }
+      window.addEventListener('DOMContentLoaded', onDatasetChange);
+    </script>
+  </head>
+  <body>
+    <div class="card">
+      <h2>Select data & model</h2>
+      {% with messages = get_flashed_messages() %}
+        {% if messages %}
+          <div class="msg">{{ messages[0] }}</div>
+        {% endif %}
+      {% endwith %}
+      <form action="/submit" method="post" enctype="multipart/form-data">
+        <!-- Step 1: dataset -->
+        <label for="dataset">Dataset</label>
+        <select id="dataset" name="dataset" onchange="onDatasetChange()" required>
+          <option value="">-- choose dataset --</option>
+          {% for d in datasets %}
+            <option value="{{ d }}">{{ d }}</option>
+          {% endfor %}
+        </select>
+        <div id="fileRow" class="hidden">
+          <label for="datafile">Upload your dataset (CSV/Parquet)</label>
+          <input type="file" id="datafile" name="datafile" accept=".csv,.parquet">
+          <div class="hint">Only required when "Other" is selected.</div>
+        </div>
+
+        <!-- Step 2: model (enabled after dataset is selected) -->
+        <div id="modelRow" class="hidden">
+          <label for="model">Model</label>
+          <select id="model" name="model" required>
+            <option value="">-- choose model --</option>
+            {% for m in models %}
+              <option value="{{ m }}">{{ m }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <button type="submit">Continue</button>
+      </form>
+    </div>
+  </body>
+</html>

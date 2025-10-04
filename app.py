@@ -1,37 +1,53 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, flash
+from werkzeug.utils import secure_filename
+import os
+
 app = Flask(__name__)
+app.secret_key = "change-me"  # needed for flash messages
 
-@app.route("/")
+UPLOAD_DIR = os.environ.get("UPLOAD_DIR", "/tmp/uploads")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+DATASETS = ["K2", "TESS", "Kepler", "Other"]
+MODELS = ["RandomForest", "GradientBoosting", "AdaBoost", "NeuralNet", "LogisticRegression"]
+
+@app.get("/")
 def index():
-    return render_template("init.html")
+    return render_template("index.html", datasets=DATASETS, models=MODELS)
 
-@app.route("/choose", methods=["POST"])
-def choose():
-    option = request.form.get("option")
-    # redirect to the right landing page
-    if option == "1":
-        return redirect(url_for("option1"))
-    elif option == "2":
-        return redirect(url_for("option2"))
-    elif option == "3":
-        return redirect(url_for("option3"))
-    elif option == "4":
-        return redirect(url_for("option4"))
-    else:
+@app.post("/submit")
+def submit():
+    dataset = request.form.get("dataset")
+    model = request.form.get("model")
+    uploaded_filename = None
+
+    # Handle file upload only if "Other" was chosen
+    if dataset == "Other":
+        file = request.files.get("datafile")
+        if not file or file.filename == "":
+            flash("Please upload a file for 'Other' dataset.")
+            return redirect(url_for("index"))
+        fname = secure_filename(file.filename)
+        save_path = os.path.join(UPLOAD_DIR, fname)
+        file.save(save_path)
+        uploaded_filename = fname
+
+    # Basic validation
+    if not dataset or not model:
+        flash("Please choose both dataset and model.")
         return redirect(url_for("index"))
 
-@app.route("/option1")
-def option1():
-    return render_template("o1.html")
+    # In a real app, enqueue a job here with (dataset, uploaded file path, model)
+    # For now, just show a summary page.
+    return redirect(url_for("summary", dataset=dataset, model=model, upload=uploaded_filename or ""))
 
-@app.route("/option2")
-def option2():
-    return render_template("o2.html")
+@app.get("/summary")
+def summary():
+    dataset = request.args.get("dataset")
+    model = request.args.get("model")
+    upload = request.args.get("upload") or None
+    return render_template("summary.html", dataset=dataset, model=model, upload=upload)
 
-@app.route("/option3")
-def option3():
-    return render_template("o3.html")
-
-@app.route("/option4")
-def option4():
-    return render_template("o4.html")
+if __name__ == "__main__":
+    # Local dev
+    app.run(host="0.0.0.0", port=8080, debug=True)
