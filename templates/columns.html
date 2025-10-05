@@ -41,7 +41,9 @@
       }
       .card h3{margin:0 0 10px; font-size:1.1rem}
       .muted{color:var(--muted)}
-      label{font-weight:600}
+      label{font-weight:600;
+		margin-bottom:12px;
+		display:block;}
 
       select, input[type="text"], button{
         width:100%; background: var(--card2); border:1px solid rgba(255,255,255,.14);
@@ -81,9 +83,26 @@
       @media (max-width: 900px){
         .grid{grid-template-columns: 1fr}
       }
+
+/* Center the content vertically & horizontally */
+.viewport{
+  min-height: 100svh;           /* full screen height; handles mobile UI chrome well */
+  display: grid;
+  place-items: center;          /* centers both ways */
+  padding: 24px;                /* breathing room on small screens */
+}
+
+/* Optional: tighten wrap padding now that it's centered */
+.wrap{ max-width:1080px; width:100%; }
+
+/* Fallback: if viewport is short, top-align to avoid cutting off content */
+@media (max-height: 700px){
+  .viewport{ align-items: start; }
+}
     </style>
   </head>
   <body>
+		<div class="viewport">
     <div class="wrap">
       <!-- HERO -->
       <header class="page-hero">
@@ -133,6 +152,7 @@
           <span class="tiny">I really hope it's an exoplanet :D</span>
         </div>
       </form>
+    </div>
     </div>
 
     <script>
