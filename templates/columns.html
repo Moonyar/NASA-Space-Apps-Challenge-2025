@@ -101,7 +101,11 @@
             <label for="target">Select the label (what to predict)</label>
             <select id="target" name="target" required>
               <option value="">— choose target —</option>
-              {% for c in columns %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
+              {% for col in columns %}
+                <option value="{{ col }}" {% if 'disposition' in col.lower() %}selected{% endif %}>
+                  {{ col }}
+                </option>
+              {% endfor %}
             </select>
           </section>
 
