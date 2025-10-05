@@ -84,7 +84,7 @@ PARAM_SCHEMAS = {
     "AdaBoost": [
         {"name":"n_estimators","type":"int","default":50,"help":"Number of weak learners."},
         {"name":"learning_rate","type":"float","default":1.0,"help":"Weight applied to each weak learner."},
-        {"name":"algorithm","type":"choice","choices":["SAMME.R","SAMME"],"default":"SAMME.R","help":"Real (SAMME.R) uses probabilities; SAMME uses class labels."}
+        {"name":"algorithm","type":"choice","choices":["SAMME"],"default":"SAMME","help":"SAMME uses class labels."}
     ],
     "NeuralNet": [
         {"name":"hidden_layer_sizes","type":"tuple_ints","default":"100","help":"e.g., '128,64' for two hidden layers."},
