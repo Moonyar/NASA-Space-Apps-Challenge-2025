@@ -153,7 +153,7 @@
             <div class="card">
               <h3>Predict a single row</h3>
               <p class="small">Enter values for the features used during training.</p>
-              <form method="post" action="/predict_one">
+              <form method="post" action="/predict_one" data-loading = "true">
                 <div class="inputs">
                   {% for f in features %}
                     <div>
@@ -187,7 +187,7 @@
             <div class="card">
               <h3>Batch CSV</h3>
               <p class="small">Upload a CSV containing exactly these columns: <code>{{ features|join(", ") }}</code></p>
-              <form method="post" action="/predict_csv" enctype="multipart/form-data">
+              <form method="post" action="/predict_csv" enctype="multipart/form-data" data-loading="true">
                 <label for="predict_file">Upload CSV</label>
                 <input id="predict_file" type="file" name="predict_file" accept=".csv">
                 <div class="actions">
@@ -220,5 +220,97 @@
         }
       });
     </script>
+
+<!-- Loading overlay (GIF + background blur) -->
+<style>
+  /* Overlay */
+  #loading[hidden]{ display:none }
+  #loading{
+    position:fixed; inset:0; z-index:9999;
+    display:flex; align-items:center; justify-content:center; gap:14px;
+    background: rgba(7,10,20,.55);
+    /* Blur whatever is behind the overlay (supported in modern browsers) */
+    backdrop-filter: blur(6px) saturate(120%);
+  }
+  #loading .card{
+    display:flex; flex-direction:column; align-items:center; gap:10px;
+    padding:18px 20px; border-radius:16px;
+    background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.05));
+    border:1px solid rgba(255,255,255,.15);
+    box-shadow: 0 20px 50px rgba(0,0,0,.45);
+    animation: fadein .18s ease;
+  }
+  #loading img{ width:96px; height:96px; object-fit:contain; image-rendering:auto; }
+  #loading .txt{ color:#e9edf8; font-weight:700 }
+  #loading .sub{ color:#b7c1d6; font-size:.92rem }
+
+  /* Extra blur on main content for browsers without backdrop-filter */
+  .blur-target.blurred{ filter: blur(4px); }
+
+  @keyframes fadein { from{ opacity:0; transform:translateY(4px) } to{ opacity:1; transform:none } }
+
+  /* Respect reduced motion */
+  @media (prefers-reduced-motion: reduce){
+    #loading, #loading .card{ animation: none }
+  }
+</style>
+
+<!-- Put this on a wrapper around your page content -->
+<script>
+  // If your top-level content wrapper has class="wrap", just add "blur-target" to it:
+  document.addEventListener('DOMContentLoaded', () => {
+    const wrap = document.querySelector('.wrap');
+    if (wrap) wrap.classList.add('blur-target');
+  });
+</script>
+
+<div id="loading" hidden aria-live="polite" role="status">
+  <div class="card">
+    <img src="{{ url_for('static', filename='loader.gif') }}" alt="Loading…" />
+    <div class="txt" id="loaderText">Crunching starlight…</div>
+    <div class="sub" id="loaderSub">Please wait a moment</div>
+  </div>
+</div>
+
+<script>
+const LINES = [
+  "Polishing pixels…",
+  "Warming up the engines…",
+  "Summoning the hamsters…",
+  "Aligning bits and bytes…",
+  "Chasing gremlins…",
+  "Engines go brrrrrr",
+  "Turning coffee into code…",
+  "Tuning the vibes…",
+  "Unclogging the tubes…",
+  "Asking nicely…"
+];
+  const loadingEl = document.getElementById('loading');
+
+  function showLoading(){
+    if (!loadingEl) return;
+    const wrap = document.querySelector('.blur-target');
+    if (wrap) wrap.classList.add('blurred');   // extra blur fallback
+    document.getElementById('loaderText').textContent =
+      LINES[Math.floor(Math.random()*LINES.length)];
+    loadingEl.hidden = false;
+  }
+  function hideLoading(){
+    if (!loadingEl) return;
+    loadingEl.hidden = true;
+    const wrap = document.querySelector('.blur-target');
+    if (wrap) wrap.classList.remove('blurred');
+  }
+
+  // Hide on page show (including back/forward cache)
+  window.addEventListener('pageshow', hideLoading);
+
+  // Auto-attach to any form that opts in
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('form[data-loading="true"]').forEach(f => {
+      f.addEventListener('submit', showLoading);
+    });
+  });
+</script>
   </body>
 </html>
