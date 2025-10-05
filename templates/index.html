@@ -83,9 +83,26 @@
       @media (max-width: 900px){
         .grid{grid-template-columns: 1fr}
       }
+
+/* Center the content vertically & horizontally */
+.viewport{
+  min-height: 100svh;           /* full screen height; handles mobile UI chrome well */
+  display: grid;
+  place-items: center;          /* centers both ways */
+  padding: 24px;                /* breathing room on small screens */
+}
+
+/* Optional: tighten wrap padding now that it's centered */
+.wrap{ max-width:1080px; width:100%; }
+
+/* Fallback: if viewport is short, top-align to avoid cutting off content */
+@media (max-height: 700px){
+  .viewport{ align-items: start; }
+}
     </style>
   </head>
   <body>
+		<div class="viewport">
     <div class="wrap">
       <!-- SIMPLE HERO (no card/bubble) -->
       <header class="page-hero">
@@ -152,7 +169,7 @@
         </div>
       </form>
     </div>
-
+    </div>
     <script>
       // Descriptions from Flask
       const MODEL_DESCRIPTIONS = {{ model_descriptions | tojson | safe }};
