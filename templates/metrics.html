@@ -1,28 +1,190 @@
 <!doctype html>
-<html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Exoplanet Classifier — Evaluation</title>
+    <style>
+      :root{
+        --bg:#0b1021; --bg2:#0f1530; --card:#121a3b; --card2:#0f1733;
+        --text:#e9edf8; --muted:#b7c1d6; --accent:#7aa2ff; --danger:#ff6b6b;
+        --radius:14px; --shadow:0 20px 50px rgba(0,0,0,.45);
+      }
+      *{box-sizing:border-box}
+      html,body{height:100%}
+      body{
+        margin:0;
+        font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+        color:var(--text);
+        background:
+          linear-gradient(180deg, rgba(7,10,20,.55), rgba(10,14,30,.78)),
+          url("{{ url_for('static', filename='fun_background.svg') }}") center/cover no-repeat fixed;
+      }
+
+      .viewport{min-height:100svh; display:grid; place-items:start center; padding:24px}
+      .wrap{max-width:1080px; width:100%}
+
+      /* Hero */
+      .page-hero{padding:8px 20px 0}
+      .page-hero h1{margin:0 0 6px; font-size: clamp(26px, 3.6vw, 40px); text-shadow: 0 6px 30px rgba(0,0,0,.45)}
+      .tagline{color:var(--muted); margin:0 0 10px}
+      .pill{
+        display:inline-block; padding:6px 10px; border-radius:999px;
+        background: rgba(122,162,255,.12); color:#deebff; border:1px solid rgba(122,162,255,.28);
+        font-size:.85rem; backdrop-filter: blur(2px);
+      }
+
+      .cards{display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap:16px; padding:18px 20px 0}
+      .card{
+        background: linear-gradient(180deg, rgba(12,18,42,.85), rgba(11,17,38,.82));
+        border:1px solid rgba(255,255,255,.08);
+        border-radius: var(--radius); padding:16px 18px; box-shadow: var(--shadow);
+      }
+      .metric{display:flex; flex-direction:column; gap:6px}
+      .metric .label{font-size:.9rem; color:var(--muted)}
+      .metric .value{font-size:1.6rem; font-weight:800}
+
+      .meta{display:flex; gap:12px; flex-wrap:wrap; color:var(--muted); margin-top:6px}
+
+      /* Confusion matrix */
+      .matrix-card{margin:18px 20px 0}
+      table.matrix{
+        width:100%; border-collapse:separate; border-spacing:0;
+        border-radius:12px; overflow:hidden; background: rgba(15,23,51,.45);
+        border:1px solid rgba(255,255,255,.12);
+      }
+      .matrix th, .matrix td{
+        padding:10px 12px; text-align:center; border-bottom:1px solid rgba(255,255,255,.08);
+        border-right:1px solid rgba(255,255,255,.06);
+      }
+      .matrix th{background: rgba(255,255,255,.04); font-weight:700}
+      .matrix tr:last-child td{border-bottom:none}
+      .matrix td:last-child, .matrix th:last-child{border-right:none}
+      .matrix td.diag{background: rgba(122,162,255,.15)}
+      .matrix td.off{background: rgba(255,255,255,.03)}
+      .matrix .corner{background: transparent; border-right:none}
+
+      /* Actions */
+      .actions{display:flex; gap:12px; align-items:center; flex-wrap:wrap; padding:18px 20px}
+      .btn{
+        display:inline-flex; align-items:center; justify-content:center; gap:10px; padding:12px 16px; border-radius:12px;
+        background:#76949F; color:#0b1021; border:0; font-weight:700; cursor:pointer;
+        box-shadow: 0 10px 30px #6A6B83; transition: all 0.3s ease;
+        text-decoration:none;
+      }
+      .btn:hover{transform: translateY(-1px); background:#86BBBD}
+      .link{color:var(--muted); text-decoration:none}
+      .link:hover{text-decoration:underline}
+
+      @media (max-width: 980px){ .cards{grid-template-columns: 1fr 1fr} }
+      @media (max-width: 640px){ .cards{grid-template-columns: 1fr} }
+    </style>
+  </head>
   <body>
-    <h2>Evaluation — {{ model }}</h2>
-    {% if did_split %}
-      <p><strong>Train size:</strong> {{ (train_size*100)|round(0) }}% — <strong>Test size:</strong> {{ ((1-train_size)*100)|round(0) }}%</p>
-      <ul>
-        <li>Train rows: {{ results.n_train }}</li>
-        <li>Test rows: {{ results.n_test }}</li>
-        <li>Accuracy: {{ '%.4f' % results.accuracy if results.accuracy is defined else 'n/a' }}</li>
-        <li>Precision: {{ '%.4f' % results.precision if results.precision is defined else 'n/a' }}</li>
-        <li>Recall: {{ '%.4f' % results.recall if results.recall is defined else 'n/a' }}</li>
-        <li>F1: {{ '%.4f' % results.f1 if results.f1 is defined else 'n/a' }}</li>
-        <li>ROC AUC: {{ '%.4f' % results.roc_auc if results.roc_auc is defined else 'n/a' }}</li>
-      </ul>
-      {% if results.confusion_matrix %}
-        <h3>Confusion matrix</h3>
-        <p>Labels: {{ results.confusion_matrix.labels }}</p>
-        <pre>{{ results.confusion_matrix.matrix | tojson(indent=2) }}</pre>
-      {% endif %}
-      <form method="post" action="/train_all"><button type="submit">Train on ALL data</button></form>
-    {% else %}
-      <p>Trained on all data directly (no evaluation split).</p>
-      <form method="post" action="/train_all"><button type="submit">Re-train on ALL data (confirm)</button></form>
-    {% endif %}
-    <p><a href="/">← Start over</a></p>
+    <div class="viewport">
+      <div class="wrap">
+        <!-- HERO -->
+        <header class="page-hero">
+          <h1>Evaluation — {{ model }}</h1>
+
+          {% if did_split %}
+            <p class="tagline">
+              <span class="meta">
+                <span>Train size: <strong>{{ (train_size*100)|round(0) }}%</strong></span>
+                <span>Test size: <strong>{{ ((1-train_size)*100)|round(0) }}%</strong></span>
+                <span>Train rows: <strong>{{ results.n_train }}</strong></span>
+                <span>Test rows: <strong>{{ results.n_test }}</strong></span>
+              </span>
+            </p>
+            <span class="pill">Step 5 of 5 — Evaluation</span>
+          {% else %}
+            <p class="tagline">Trained on all data directly (no evaluation split).</p>
+            <span class="pill">Step 5 of 5 — Evaluation</span>
+          {% endif %}
+        </header>
+
+        {% if did_split %}
+          <!-- Metric cards -->
+          <section class="cards">
+            <div class="card metric">
+              <div class="label">Accuracy</div>
+              <div class="value">{{ '%.4f' % results.accuracy if results.accuracy is defined else '—' }}</div>
+            </div>
+            <div class="card metric">
+              <div class="label">Precision</div>
+              <div class="value">{{ '%.4f' % results.precision if results.precision is defined else '—' }}</div>
+            </div>
+            <div class="card metric">
+              <div class="label">Recall</div>
+              <div class="value">{{ '%.4f' % results.recall if results.recall is defined else '—' }}</div>
+            </div>
+            <div class="card metric">
+              <div class="label">F1 score</div>
+              <div class="value">{{ '%.4f' % results.f1 if results.f1 is defined else '—' }}</div>
+            </div>
+          </section>
+
+          <!-- Optional ROC AUC (binary only) -->
+          {% if results.roc_auc is defined %}
+            <section class="cards" style="grid-template-columns: 1fr; padding-top:12px">
+              <div class="card metric">
+                <div class="label">ROC AUC</div>
+                <div class="value">{{ '%.4f' % results.roc_auc }}</div>
+              </div>
+            </section>
+          {% endif %}
+
+          <!-- Confusion matrix -->
+          {% if results.confusion_matrix %}
+            <section class="matrix-card card">
+              <h3 style="margin:0 0 12px">Confusion matrix</h3>
+              <div class="small" style="margin-bottom:10px">Labels: {{ results.confusion_matrix.labels }}</div>
+              <table class="matrix">
+                <thead>
+                  <tr>
+                    <th class="corner"></th>
+                    {% for lbl in results.confusion_matrix.labels %}
+                      <th>Pred: {{ lbl }}</th>
+                    {% endfor %}
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for row_idx, row in enumerate(results.confusion_matrix.matrix) %}
+                    <tr>
+                      <th>True: {{ results.confusion_matrix.labels[row_idx] }}</th>
+                      {% for col_idx, val in enumerate(row) %}
+                        {% set cls = 'diag' if row_idx == col_idx else 'off' %}
+                        <td class="{{ cls }}">{{ val }}</td>
+                      {% endfor %}
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </section>
+          {% endif %}
+
+          <div class="actions">
+            <form method="post" action="/train_all" style="margin:0">
+              <button type="submit" class="btn">Train on ALL data</button>
+            </form>
+            <a class="link" href="/">← Start over</a>
+          </div>
+        {% else %}
+          <!-- No split case -->
+          <section class="cards" style="grid-template-columns: 1fr; padding-top:18px">
+            <div class="card">
+              <p class="tagline" style="margin:0">No evaluation metrics to show because you skipped the split.</p>
+            </div>
+          </section>
+
+          <div class="actions">
+            <form method="post" action="/train_all" style="margin:0">
+              <button type="submit" class="btn">Re-train on ALL data (confirm)</button>
+            </form>
+            <a class="link" href="/">← Start over</a>
+          </div>
+        {% endif %}
+      </div>
+    </div>
   </body>
 </html>
