@@ -14,13 +14,16 @@ Tasks to do
 - [ ] make the project look nicer
 - [ ] Fix the column selection to be better -> maybe description of columns?
 - [ ] Fix adaboost algorithm selection
-- [ ] select all button -> the selected y should not come up in the feature list on the right
+- [ ] select all button -> the selected y should not come up in the feature list on the right -> select all that is visible button
 - [ ] fix the blurry thing on hyper tuning page
 - [ ] look into regularization in NN and ridge/lasso
+- [ ] in the fs section add a hint: use only if NN or log reg because other models really don't do better with it.
 - [ ] finish submission
 
 Nice to have
 - [ ] give freedom to add columns by feature engineering
+- [ ] improve the helps in PARAM SCHEMAS
+
 
 
 

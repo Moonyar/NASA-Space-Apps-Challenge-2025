@@ -15,6 +15,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.feature_selection import SelectFromModel
 import joblib
 
+# TODO: use gcs for storage if time permits
 USE_GCS = False
 try:
     from google.cloud import storage
@@ -24,17 +25,20 @@ except Exception:
     USE_GCS = False
 
 app = Flask(__name__)
-app.config["SECRET_KEY"] = os.environ.get("FLASK_SECRET_KEY", "dev_thingies")
+app.config["SECRET_KEY"] = os.environ.get("FLASK_SECRET_KEY", "nonempty")
 app.config["MAX_CONTENT_LENGTH"] = int(os.environ.get("MAX_UPLOAD_MB", "50")) * 1024 * 1024
+
+# Fix for metrics.html to use enumerate
 app.jinja_env.globals.update(enumerate=enumerate, zip=zip)
+
 UPLOAD_DIR = os.environ.get("UPLOAD_DIR", "/tmp/uploads")
 MODEL_DIR = os.environ.get("MODEL_DIR", "/tmp/models")
+
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(MODEL_DIR, exist_ok=True)
 
 DATASETS = ["K2", "TESS", "Kepler", "Other"]
 MODELS = ["RandomForest", "GradientBoosting", "AdaBoost", "NeuralNet", "LogisticRegression"]
-
 MODEL_DESCRIPTIONS = {
     "RandomForest": {
         "summary": "Ensemble of decision trees via bagging; robust, handles non-linearities and mixed features well.",
@@ -62,7 +66,6 @@ MODEL_DESCRIPTIONS = {
         "cons": ["Linear decision boundary", "Needs scaling", "Limited for complex feature interactions"]
     }
 }
-
 PARAM_SCHEMAS = {
     "RandomForest": [
         {"name":"n_estimators","type":"int","default":100,"help":"Number of trees. Larger can improve performance but increases time."},
@@ -103,32 +106,40 @@ PARAM_SCHEMAS = {
         {"name":"random_state","type":"int_or_none","default":42,"help":"Seed for reproducibility."}
     ]
 }
-
 L1L2_HELP = "Lasso (L1) encourages sparsity—zeroing weaker features. Ridge (L2) shrinks coefficients smoothly. We use a Logistic Regression selector before your chosen model; smaller C = stronger selection."
 
+# Util Functions
 def read_table(uri: str, nrows: int = None) -> pd.DataFrame:
     if uri.lower().endswith(".csv"):
-        return pd.read_csv(uri, nrows=nrows, comment ="#")
+        return pd.read_csv(uri, nrows=nrows, comment = "#")
     elif uri.lower().endswith(".parquet") or uri.lower().endswith(".pq"):
         return pd.read_parquet(uri)
     else:
-        return pd.read_csv(uri, nrows=nrows)
+        return pd.read_csv(uri, nrows=nrows, comment = "#")
 
 def build_pipeline(model_name: str, params: dict, numeric_cols, cat_cols,
                    fs_method: str = "none", fs_C: float = 1.0):
+
+    # sing median for roboustness -> TODO: give option for user to choose
     numeric_steps = [("imputer", SimpleImputer(strategy="median"))]
+
     if model_name in ("NeuralNet", "LogisticRegression"):
         numeric_steps.append(("scaler", StandardScaler()))
+
     num_tf = Pipeline(steps=numeric_steps)
+
     cat_tf = Pipeline(steps=[("imputer", SimpleImputer(strategy="most_frequent")),
                              ("onehot", OneHotEncoder(handle_unknown="ignore"))])
+
+    # TODO: change the sparse_threshold based on which model is being used -> is a sparse matrix expected or a dense one based on the model selected. 
+    # TODO: DATEs + text columns are getting one hot encoded -> it is better to make these columns not categorical.
     pre = ColumnTransformer([("num", num_tf, numeric_cols),
                              ("cat", cat_tf, cat_cols)], remainder="drop", sparse_threshold=0.3)
-    # Base estimator
+
     if model_name == "RandomForest":
         model = RandomForestClassifier(**params)
     elif model_name == "GradientBoosting":
-        model = GradientBoostingClassifier(**{k:v for k,v in params.items() if k in {"n_estimators","learning_rate","subsample","random_state","max_depth"}})
+        model = GradientBoostingClassifier(**params)
     elif model_name == "AdaBoost":
         model = AdaBoostClassifier(**params)
     elif model_name == "NeuralNet":
@@ -139,8 +150,12 @@ def build_pipeline(model_name: str, params: dict, numeric_cols, cat_cols,
         raise ValueError(f"Unsupported model: {model_name}")
 
     steps = [("pre", pre)]
+
+    # TODO: change this so it looks at which model is chosen and offers to do fs or not -> because fs is not good with all models
     if fs_method in ("lasso", "ridge"):
-        penalty = "l1" if fs_method == "lasso" else "l2"
+        if fs_method == "lasso":
+            penalty = "l1" 
+        else: "l2"
         fs_est = LogisticRegression(penalty=penalty, C=float(fs_C), solver="saga", max_iter=2000)
         steps.append(("fs", SelectFromModel(fs_est, threshold="median")))
     steps.append(("model", model))
@@ -174,7 +189,6 @@ def parse_params(model_name: str, form) -> dict:
             params[name] = val
     return params
 
-
 @app.get("/")
 def index():
     return render_template(
@@ -183,6 +197,7 @@ def index():
         models=MODELS,
         model_descriptions=MODEL_DESCRIPTIONS,
     )
+
 @app.post("/submit")
 def submit():
     dataset = request.form.get("dataset")
@@ -198,6 +213,7 @@ def submit():
             flash("Please upload a file for 'Other' dataset.")
             return redirect(url_for("index"))
         fname = secure_filename(file.filename)
+        #TODO: make this work with GCS storage as well.
         if USE_GCS and os.environ.get("GCS_BUCKET"):
             bucket = storage_client.bucket(os.environ["GCS_BUCKET"])
             path = f"uploads/{fname}"
@@ -218,11 +234,15 @@ def submit():
     session["dataset"] = dataset
     session["dataset_uri"] = dataset_uri
     session["model"] = model
+
     return redirect(url_for("columns"))
 
+#TODO: Y label chosen should not show up in the select columns section
 @app.get("/columns")
 def columns():
+
     uri = session.get("dataset_uri")
+
     if not uri:
         return redirect(url_for("index"))
     try:
@@ -231,37 +251,51 @@ def columns():
     except Exception as e:
         flash(f"Could not read dataset: {e}")
         return redirect(url_for("index"))
+
     help_text = "Pick your target (label) and the feature columns used to train. Non-numeric features will be one-hot encoded automatically."
+
     return render_template("columns.html", columns=cols, dataset=session.get("dataset"), model=session.get("model"), help_text=help_text)
 
 @app.post("/columns")
 def columns_post():
+
     feats = request.form.getlist("features")
     target = request.form.get("target")
+
     if not feats or not target:
         flash("Please select at least one feature and a target column.")
         return redirect(url_for("columns"))
+
     session["feature_cols"] = feats
     session["target_col"] = target
+
     return redirect(url_for("tune"))
 
 @app.get("/tune")
 def tune():
+
     model = session.get("model")
+
     if not model: return redirect(url_for("index"))
+
     return render_template("tune.html", model=model, schema=PARAM_SCHEMAS[model],
                            model_info=MODEL_DESCRIPTIONS[model], l1l2_help=L1L2_HELP)
 
 @app.post("/tune")
 def tune_post():
+
     model = session.get("model")
+
     if not model: return redirect(url_for("index"))
+
     session["params"] = parse_params(model, request.form)
     session["fs_method"] = request.form.get("fs_method", "none")
+
     try:
         session["fs_C"] = float(request.form.get("fs_C", "1.0"))
     except Exception:
         session["fs_C"] = 1.0
+
     return redirect(url_for("split"))
 
 @app.get("/split")
@@ -269,23 +303,35 @@ def split():
     return render_template("split.html")
 
 def evaluate(df, features, target, model_name, params, do_split, train_size, fs_method, fs_C):
-    X = df[features]; y = df[target]
+
+    X = df[features]
+    y = df[target]
+
     num_cols = X.select_dtypes(include="number").columns.tolist()
+
+    #TODO: this is not good -> add more datatypes so for example: date does not get into categorical
     cat_cols = [c for c in X.columns if c not in num_cols]
+
     pipe = build_pipeline(model_name, params, num_cols, cat_cols, fs_method, fs_C)
 
     out = {}
+
     if do_split:
         X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=(1-train_size),
                                                   random_state=42, stratify=y if y.nunique()>=2 else None)
+        
         pipe.fit(X_tr, y_tr)
+        
         y_pred = pipe.predict(X_te)
-        out["n_train"] = int(len(X_tr)); out["n_test"] = int(len(X_te))
+
+        out["n_train"] = int(len(X_tr))
+        out["n_test"] = int(len(X_te))
         avg = "binary" if y.nunique()==2 else "macro"
         out["accuracy"] = float(accuracy_score(y_te, y_pred))
         out["precision"] = float(precision_score(y_te, y_pred, average=avg, zero_division=0))
         out["recall"] = float(recall_score(y_te, y_pred, average=avg, zero_division=0))
         out["f1"] = float(f1_score(y_te, y_pred, average=avg, zero_division=0))
+
         if y.nunique()==2 and hasattr(pipe.named_steps["model"], "predict_proba"):
             try:
                 proba = pipe.predict_proba(X_te)[:, 1]
@@ -295,6 +341,7 @@ def evaluate(df, features, target, model_name, params, do_split, train_size, fs_
             cm = confusion_matrix(y_te, y_pred).tolist()
             out["confusion_matrix"] = {"labels": sorted(y_te.unique().tolist()), "matrix": cm}
         except Exception: pass
+
     else:
         pipe.fit(X, y)
         out["n_train"] = int(len(X)); out["n_test"] = 0
@@ -483,6 +530,5 @@ def template_csv():
 def healthz():
     return "ok", 200
 
-
-
+# host locally for debugging
 if __name__ == "__main__": app.run(host="127.0.0.1", port=5000, debug=True)
