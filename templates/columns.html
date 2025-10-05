@@ -1,19 +1,168 @@
 <!doctype html>
-<html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Exoplanet Classifier — Choose Columns</title>
+    <style>
+      :root{
+        --bg:#0b1021; --bg2:#0f1530; --card:#121a3b; --card2:#0f1733;
+        --text:#e9edf8; --muted:#b7c1d6; --accent:#7aa2ff; --danger:#ff6b6b;
+        --radius:14px; --shadow:0 20px 50px rgba(0,0,0,.45);
+      }
+      *{box-sizing:border-box}
+      html,body{height:100%}
+      body{
+        margin:0;
+        font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+        color:var(--text);
+        background:
+          linear-gradient(180deg, rgba(7,10,20,.55), rgba(10,14,30,.78)),
+          url("{{ url_for('static', filename='fun_background.svg') }}") center/cover no-repeat fixed;
+      }
+      .wrap{max-width:1080px; margin:0 auto; padding:28px 20px 48px}
+
+      /* Hero */
+      .page-hero{padding:32px 0 12px}
+      .page-hero h1{margin:0 0 6px; font-size: clamp(26px, 3.6vw, 40px); text-shadow: 0 6px 30px rgba(0,0,0,.45)}
+      .tagline{color:var(--muted); margin:0 0 10px}
+      .pill{
+        display:inline-block; padding:6px 10px; border-radius:999px;
+        background: rgba(122,162,255,.12); color:#deebff; border:1px solid rgba(122,162,255,.28);
+        font-size:.85rem; backdrop-filter: blur(2px);
+      }
+
+      /* Layout */
+      .grid{display:grid; grid-template-columns: 1fr 1fr; gap:20px; margin-top:18px}
+      .card{
+        background: linear-gradient(180deg, rgba(12,18,42,.85), rgba(11,17,38,.82));
+        border:1px solid rgba(255,255,255,.08);
+        border-radius: var(--radius); padding:20px; box-shadow: var(--shadow);
+      }
+      .card h3{margin:0 0 10px; font-size:1.1rem}
+      .muted{color:var(--muted)}
+      label{font-weight:600}
+
+      select, input[type="text"], button{
+        width:100%; background: var(--card2); border:1px solid rgba(255,255,255,.14);
+        color:var(--text); border-radius:12px; padding:10px 12px; font-size:1rem;
+        transition: box-shadow .15s ease, border-color .15s ease, transform .02s ease;
+      }
+      select:focus, input[type="text"]:focus, button:focus{
+        outline:none; box-shadow: 0 0 0 3px rgba(122,162,255,.25); border-color: var(--accent)
+      }
+      select:hover, input[type="text"]:hover{border-color: rgba(255,255,255,.25)}
+
+      /* Feature list */
+      .list-wrap{margin-top:10px}
+      .list-toolbar{
+        display:flex; gap:10px; align-items:center; justify-content:space-between; margin-bottom:10px; flex-wrap:wrap;
+      }
+      .tiny{font-size:.9rem; color:var(--muted)}
+      .list{
+        max-height:360px; overflow:auto; border:1px solid rgba(255,255,255,.12);
+        border-radius:12px; padding:8px; background: rgba(15,23,51,.55);
+      }
+      .item{
+        display:flex; align-items:center; gap:10px; padding:6px 6px; border-radius:8px;
+      }
+      .item:hover{background: rgba(255,255,255,.06)}
+      .item input{transform: translateY(1px)}
+      .footer{
+        display:flex; gap:12px; margin-top:18px; flex-wrap:wrap; align-items:center
+      }
+      .btn{
+        display:inline-flex; align-items:center; justify-content:center; gap:10px; padding:12px 16px; border-radius:12px;
+        background: linear-gradient(180deg, var(--accent), #76949F); color:#0b1021; border:0; font-weight:700; cursor:pointer;
+        box-shadow: 0 10px 30px rgba(122,162,255,.35);
+      }
+      .btn:hover{transform: translateY(-1px)}
+
+      @media (max-width: 900px){
+        .grid{grid-template-columns: 1fr}
+      }
+    </style>
+  </head>
   <body>
-    <h2>Select columns — {{ dataset }} ({{ model }})</h2>
-    <p style="color:#555">{{ help_text }}</p>
-    <form method="post" action="/columns">
-      <h3>Target column</h3>
-      <select name="target" required>
-        <option value="">-- choose target --</option>
-        {% for c in columns %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
-      </select>
-      <h3 style="margin-top:14px">Feature columns</h3>
-      <div style="max-height:300px; overflow:auto; border:1px solid #ddd; padding:8px;">
-        {% for c in columns %}<label><input type="checkbox" name="features" value="{{ c }}"> {{ c }}</label><br>{% endfor %}
-      </div>
-      <p><button type="submit" style="margin-top:12px">Next: Hyperparameters</button></p>
-    </form>
+    <div class="wrap">
+      <!-- HERO -->
+      <header class="page-hero">
+        <h1>Select Columns</h1>
+        <p class="tagline">Mission dataset: <strong>{{ dataset }}</strong> &nbsp;•&nbsp; Model: <strong>{{ model }}</strong></p>
+        <span class="pill">Step 2 of 5 — Choose target & features</span>
+      </header>
+
+      <form method="post" action="/columns">
+        <div class="grid">
+          <!-- Target -->
+          <section class="card">
+            <h3>Target column</h3>
+            <p class="muted">{{ help_text }}</p>
+            <label for="target">Select the label (what to predict)</label>
+            <select id="target" name="target" required>
+              <option value="">— choose target —</option>
+              {% for c in columns %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
+            </select>
+          </section>
+
+          <!-- Features -->
+          <section class="card">
+            <h3>Feature columns</h3>
+            <p class="muted">Choose the inputs the model can see. Non-numeric features are one-hot encoded automatically.</p>
+
+            <div class="list-wrap">
+              <div class="list-toolbar">
+                <input id="featureSearch" type="text" placeholder="Filter columns…" aria-label="Filter feature columns">
+                <div class="tiny"><span id="selCount">0</span> selected</div>
+              </div>
+
+              <div id="featureList" class="list">
+                {% for c in columns %}
+                  <label class="item">
+                    <input type="checkbox" name="features" value="{{ c }}">
+                    <span>{{ c }}</span>
+                  </label>
+                {% endfor %}
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="footer">
+          <button type="submit" class="btn">Next: Hyperparameters</button>
+          <span class="tiny">I really hope it's an exoplanet :D</span>
+        </div>
+      </form>
+    </div>
+
+    <script>
+      // Live filter (purely UI)
+      const q = document.getElementById('featureSearch');
+      const list = document.getElementById('featureList');
+      const countEl = document.getElementById('selCount');
+
+      function updateCount(){
+        const checked = list.querySelectorAll('input[type="checkbox"]:checked').length;
+        countEl.textContent = checked;
+      }
+
+      function filterList(){
+        const term = (q.value || '').toLowerCase();
+        const items = list.querySelectorAll('.item');
+        items.forEach(it => {
+          const label = it.querySelector('span')?.textContent.toLowerCase() || '';
+          it.style.display = label.includes(term) ? 'flex' : 'none';
+        });
+      }
+
+      list.addEventListener('change', updateCount);
+      q.addEventListener('input', filterList);
+
+      // Initialize
+      document.addEventListener('DOMContentLoaded', () => {
+        updateCount();
+        filterList();
+      });
+    </script>
   </body>
 </html>
