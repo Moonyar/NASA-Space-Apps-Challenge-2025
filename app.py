@@ -15,6 +15,13 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.feature_selection import SelectFromModel
 import joblib
 
+# this part is for model downloading
+from datetime import datetime, timedelta
+import zipfile
+import numpy as np
+import sklearn
+from flask import after_this_request
+
 # TODO: use gcs for storage if time permits
 USE_GCS = False
 try:
@@ -408,12 +415,34 @@ def train_all():
     pipe = build_pipeline(model_name, params, num_cols, cat_cols, fs_method, fs_C)
     pipe.fit(X, y)
 
+    meta = {
+        "created_utc": datetime.utcnow().isoformat() + "Z",
+        "model": model_name,
+        "target": target,
+        "features": features,
+        "params": params,
+        "fs_method": fs_method,
+        "fs_C": fs_C,
+        "rows": int(len(df)),
+        "versions": {
+            "sklearn": sklearn.__version__,
+            "numpy": np.__version__,
+            "joblib": joblib.__version__,
+        },
+    }
+    bundle = {
+        "pipe": pipe,
+        "features": features,
+        "feature_types": {c: ("num" if c in num_cols else "cat") for c in features},
+        "meta": meta,
+    }
     model_id = str(uuid.uuid4())
     local_path = os.path.join(MODEL_DIR, f"model_{model_id}.joblib")
-    joblib.dump({"pipe": pipe, "features": features, "feature_types": {c: ("num" if c in num_cols else "cat") for c in features}}, local_path)
+    joblib.dump(bundle, local_path, compress = 3)
 
     session["model_path"] = local_path
     session["features"] = features
+    session["model_id"] = model_id
 
     #TODO: use buckets in gcs
     if USE_GCS and os.environ.get("RESULTS_BUCKET"):
@@ -423,7 +452,8 @@ def train_all():
                 bucket_name = bucket_uri[5:].split("/", 1)[0]
                 prefix = bucket_uri[5+len(bucket_name):].strip("/")
                 bucket = storage_client.bucket(bucket_name)
-                blob = bucket.blob(f"{prefix}/models/model_{model_id}.joblib" if prefix else f"models/model_{model_id}.joblib")
+                gcs_blob = f"{prefix+'/models/' if prefix else 'models/'}model_{model_id}.joblib"
+                blob = bucket.blob(gcs_blob)
                 blob.upload_from_filename(local_path)
         except Exception:
             pass
@@ -537,6 +567,105 @@ def template_csv():
 @app.get("/healthz")
 def healthz():
     return "ok", 200
+
+
+@app.get("/download_bundle")
+def download_bundle():
+    model_path = session.get("model_path")
+    model_id = session.get("model_id") or "model"
+    model_bytes = None
+
+    # Try local file first
+    if model_path and os.path.exists(model_path):
+        with open(model_path, "rb") as f:
+            model_bytes = f.read()
+        bundle = joblib.load(io.BytesIO(model_bytes))  # to extract meta
+    else:
+        # Fallback: get from GCS if we have a recorded location
+        if USE_GCS and session.get("gcs_bucket") and session.get("gcs_blob"):
+            try:
+                bucket = storage_client.bucket(session["gcs_bucket"])
+                blob = bucket.blob(session["gcs_blob"])
+                model_bytes = blob.download_as_bytes()
+                bundle = joblib.load(io.BytesIO(model_bytes))
+            except Exception as e:
+                flash(f"Could not download model from GCS: {e}")
+                return redirect(url_for("final"))
+        else:
+            flash("Model artifact not found in this instance. Please retrain.")
+            return redirect(url_for("final"))
+
+    meta = bundle.get("meta") or {}
+    # If meta missing for any reason, fall back to your session summary
+    summary = session.get("summary") or {}
+    if not meta:
+        meta = {
+            "created_utc": datetime.utcnow().isoformat()+"Z",
+            "model": summary.get("model"),
+            "target": summary.get("target"),
+            "features": summary.get("features", []),
+            "params": summary.get("params", {}),
+            "fs_method": summary.get("fs_method"),
+            "fs_C": summary.get("fs_C"),
+        }
+
+    readme = f"""Exoplanet Classifier — Trained Model Bundle
+
+This bundle contains:
+- model_{model_id}.joblib : scikit-learn Pipeline (preprocessing + model)
+- metadata.json           : training details & library versions
+- README.txt              : this file
+
+Quick start (Python):
+---------------------
+import joblib, pandas as pd
+
+art = joblib.load("model_{model_id}.joblib")
+pipe = art["pipe"]
+features = art.get("features", [])
+# df must include the same feature columns as used in training:
+# preds = pipe.predict(df[features])
+
+Notes:
+- Only load artifacts from trusted sources (pickle-based).
+- Versions used are listed in metadata.json to help recreate an environment.
+"""
+
+    # Write a temp ZIP on disk (memory-friendly) and stream it back
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
+    tmp_path = tmp.name
+    tmp.close()
+
+    try:
+        with zipfile.ZipFile(tmp_path, "w", compression=zipfile.ZIP_DEFLATED) as z:
+            # Model artifact
+            z.writestr(f"model_{model_id}.joblib", model_bytes)
+            # Metadata
+            z.writestr("metadata.json", json.dumps(meta, indent=2))
+            # README
+            z.writestr("README.txt", readme)
+
+        @after_this_request
+        def cleanup(response):
+            try:
+                os.remove(tmp_path)
+            except Exception:
+                pass
+            return response
+
+        return send_file(
+            tmp_path,
+            as_attachment=True,
+            download_name="trained_model_bundle.zip",
+            mimetype="application/zip",
+        )
+    except Exception as e:
+        # Clean up if zipping failed
+        try: os.remove(tmp_path)
+        except Exception: pass
+        flash(f"Failed to prepare bundle: {e}")
+        return redirect(url_for("final"))
+
 
 # host locally for debugging
 if __name__ == "__main__": app.run(host="127.0.0.1", port=5000, debug=True)
