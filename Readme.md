@@ -13,11 +13,11 @@ Tasks to do
 - [X] Add helps + descriptions for everything 
 - [X] make the project look nicer
 - [X] Fix adaboost algorithm selection
-- [ ] select all button -> the selected y should not come up in the feature list on the right -> select all that is visible button
+- [X] select all button -> the selected y should not come up in the feature list on the right -> select all that is visible button
 - [ ] fix the blurry thing on hyper tuning page
 - [ ] look into regularization in NN and ridge/lasso
 - [ ] in the fs section add a hint: use only if NN or log reg because other models really don't do better with it.
-- [ ] look into which columns to choose for the demo
+- [X] look into which columns to choose for the demo
 - [ ] finish submission
 
 Nice to have
