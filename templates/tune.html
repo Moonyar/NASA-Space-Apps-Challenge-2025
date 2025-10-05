@@ -46,7 +46,7 @@
       label{font-weight:600; display:block; margin-bottom:8px}
 
       /* Form controls */
-      select, input[type="text"], input[type="number"], button{
+      select, input[type="text"], input[type="number"], input[type="int"], button{
         width:100%; background: var(--card2); border:1px solid rgba(255,255,255,.14);
         color:var(--text); border-radius:12px; padding:10px 12px; font-size:1rem;
         transition: box-shadow .15s ease, border-color .15s ease, transform .02s ease;
@@ -141,7 +141,8 @@
                     <input id="param_{{ p.name }}"
                            name="{{ p.name }}"
                            value="{{ p.default if p.default is not none else '' }}"
-                           placeholder="{{ p.type }}">
+                           placeholder="{{ p.type }}"
+                           type="text">
                   {% endif %}
                   {% if p.help %}<div class="help small">{{ p.help }}</div>{% endif %}
                 </div>
