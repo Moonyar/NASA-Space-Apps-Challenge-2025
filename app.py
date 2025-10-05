@@ -26,7 +26,7 @@ except Exception:
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.environ.get("FLASK_SECRET_KEY", "dev_thingies")
 app.config["MAX_CONTENT_LENGTH"] = int(os.environ.get("MAX_UPLOAD_MB", "50")) * 1024 * 1024
-
+app.jinja_env.globals.update(enumerate=enumerate, zip=zip)
 UPLOAD_DIR = os.environ.get("UPLOAD_DIR", "/tmp/uploads")
 MODEL_DIR = os.environ.get("MODEL_DIR", "/tmp/models")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
