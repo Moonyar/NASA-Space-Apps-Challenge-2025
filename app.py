@@ -363,10 +363,12 @@ def run():
         return redirect(url_for("index"))
 
     do_split = request.form.get("do_split") == "on"
+
     try:
         train_size = float(request.form.get("train_size", "0.8"))
     except Exception:
         train_size = 0.8
+
     train_size = min(max(train_size, 0.5), 0.95)
 
     try:
@@ -399,7 +401,8 @@ def train_all():
         flash(f"Read error: {e}")
         return redirect(url_for("index"))
 
-    X = df[features]; y = df[target]
+    X = df[features]
+    y = df[target]
     num_cols = X.select_dtypes(include="number").columns.tolist()
     cat_cols = [c for c in X.columns if c not in num_cols]
     pipe = build_pipeline(model_name, params, num_cols, cat_cols, fs_method, fs_C)
@@ -408,9 +411,11 @@ def train_all():
     model_id = str(uuid.uuid4())
     local_path = os.path.join(MODEL_DIR, f"model_{model_id}.joblib")
     joblib.dump({"pipe": pipe, "features": features, "feature_types": {c: ("num" if c in num_cols else "cat") for c in features}}, local_path)
+
     session["model_path"] = local_path
     session["features"] = features
 
+    #TODO: use buckets in gcs
     if USE_GCS and os.environ.get("RESULTS_BUCKET"):
         try:
             bucket_uri = os.environ["RESULTS_BUCKET"].rstrip("/")
@@ -425,7 +430,9 @@ def train_all():
 
     summary = {"rows": int(len(df)), "model": model_name, "target": target, "features": features, "params": params,
                "fs_method": fs_method, "fs_C": fs_C}
+
     session["summary"] = summary
+
     return redirect(url_for("final"))
 
 @app.get("/final")
@@ -433,6 +440,7 @@ def final():
     summary = session.get("summary")
     features = session.get("features", [])
     feature_types = {}
+
     try:
         bundle = joblib.load(session.get("model_path"))
         feature_types = bundle.get("feature_types", {})
