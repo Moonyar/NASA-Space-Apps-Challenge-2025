@@ -14,6 +14,8 @@ Tasks to do
 - [ ] make the project look nicer
 - [ ] Fix the column selection to be better -> maybe description of columns?
 - [ ] Fix adaboost algorithm selection
+- [ ] select all button -> the selected y should not come up in the feature list on the right
+- [ ] fix the blurry thing on hyper tuning page
 - [ ] finish submission
 
 Nice to have
