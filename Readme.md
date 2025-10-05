@@ -12,8 +12,8 @@ Tasks to do
 - [X] show results with metrics -> abililty to download the csv
 - [X] Add helps + descriptions for everything 
 - [ ] make the project look nicer
+- [ ] Fix the column selection to be better -> maybe description of columns?
 - [ ] finish submission
-
 
 Nice to have
 - [ ] give freedom to add columns by feature engineering
