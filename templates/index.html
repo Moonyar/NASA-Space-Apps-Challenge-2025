@@ -1,81 +1,185 @@
 <!doctype html>
-<html>
+<html lang="en">
   <head>
+    <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Exoplanet Classifier — Select Dataset & Model</title>
     <style>
-      .info-box { border: 1px solid #eee; padding: 12px; border-radius: 8px; background: #fafafa; }
-      .muted { color:#666; font-size:.9em; }
+      :root{
+        --bg:#0b1021; --bg2:#0f1530; --card:#121a3b; --card2:#0f1733;
+        --text:#e9edf8; --muted:#b7c1d6; --accent:#7aa2ff; --danger:#ff6b6b;
+        --radius:14px; --shadow:0 20px 50px rgba(0,0,0,.45);
+      }
+      *{box-sizing:border-box} html,body{height:100%}
+      body{
+        margin:0;
+        font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+        color:var(--text);
+        /* Background image + soft spacey overlay for readability */
+        background:
+          linear-gradient(180deg, rgba(7,10,20,.55), rgba(10,14,30,.78)),
+ url("{{ url_for('static', filename='exoplanet-bg.jpg') }}") center/cover no-repeat fixed;
+      }
+      .wrap{max-width:1080px; margin:0 auto; padding:28px 20px 48px}
+
+      /* New plain hero (no bubble/card) */
+      .page-hero{padding:32px 0 12px}
+      .page-hero h1{
+        margin:0 0 6px;
+        font-size: clamp(28px, 4vw, 44px);
+        letter-spacing:.2px;
+        text-shadow: 0 6px 30px rgba(0,0,0,.45);
+      }
+      .tagline{color:var(--muted); margin:0 0 10px; max-width:800px}
+      .pill{
+        display:inline-block; padding:6px 10px; border-radius:999px;
+        background: rgba(122,162,255,.12); color:#deebff; border:1px solid rgba(122,162,255,.28);
+        font-size:.85rem; backdrop-filter: blur(2px);
+      }
+
+      /* Grid below the hero */
+      .grid{display:grid; grid-template-columns: 1fr 1fr; gap:20px; margin-top:18px}
+      .card{
+        background: linear-gradient(180deg, rgba(12,18,42,.85), rgba(11,17,38,.82));
+        border:1px solid rgba(255,255,255,.08);
+        border-radius: var(--radius); padding:20px; box-shadow: var(--shadow);
+      }
+      .card h3{margin:0 0 10px; font-size:1.1rem}
+      label{font-weight:600}
+
+      select, input[type="file"], button{
+        width:100%; background: var(--card2); border:1px solid rgba(255,255,255,.14);
+        color:var(--text); border-radius:12px; padding:10px 12px; font-size:1rem;
+        transition: box-shadow .15s ease, border-color .15s ease, transform .02s ease;
+      }
+      select:focus, input[type="file"]:focus, button:focus{
+        outline:none; box-shadow: 0 0 0 3px rgba(122,162,255,.25); border-color: var(--accent)
+      }
+      select:hover, input[type="file"]:hover{border-color: rgba(255,255,255,.25)}
+
+      .muted{color:var(--muted); font-size:.92rem}
+      .flash{margin:14px 0; padding:10px 12px; border-radius:10px; background: rgba(255,107,107,.1); border:1px solid rgba(255,107,107,.25)}
+
+      .actions{margin-top:18px}
+      .btn{
+        display:inline-flex; align-items:center; justify-content:center; gap:10px; padding:12px 16px; border-radius:12px;
+        background: linear-gradient(180deg, var(--accent), #4e7bff); color:#0b1021; border:0; font-weight:700; cursor:pointer;
+        box-shadow: 0 10px 30px rgba(122,162,255,.35);
+      }
+      .btn:hover{transform: translateY(-1px)}
+
+      /* Model info panel (unchanged behavior) */
+      .info-box{
+        border:1px solid rgba(255,255,255,.12);
+        background: linear-gradient(180deg, rgba(138, 180, 255, .10), rgba(138, 180, 255, .05));
+        border-radius:12px; padding:14px; margin-top:12px; display:none;
+      }
+      .info-box .kicker{font-size:.85rem; letter-spacing:.06em; color:#cfe0ff; text-transform:uppercase}
+      .proscons{display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-top:8px}
+      .proscons ul{margin:6px 0 0 16px; padding:0}
+
+      @media (max-width: 900px){
+        .grid{grid-template-columns: 1fr}
+      }
     </style>
   </head>
   <body>
-    <h2>Select Dataset and Model</h2>
-    <p>Choose a built-in dataset (K2/TESS/Kepler) or upload your own CSV/Parquet. Then pick a model to use.</p>
+    <div class="wrap">
+      <!-- SIMPLE HERO (no card/bubble) -->
+      <header class="page-hero">
+        <h1>IS THAT AN EXOPLANET? O_O </h1>
+        <p class="tagline">Upload your own dataset or use one of NASA's three open datasets to train your selected model.</p>
+        <span class="pill">Step 1 of 5 — Choose dataset & model</span>
+      </header>
 
-    {% with messages = get_flashed_messages() %}
-      {% if messages %}<p style="color:red">{{ messages[0] }}</p>{% endif %}
-    {% endwith %}
+      {% with messages = get_flashed_messages() %}
+        {% if messages %}<div class="flash">{{ messages[0] }}</div>{% endif %}
+      {% endwith %}
 
-    <form action="/submit" method="post" enctype="multipart/form-data">
-      <label><strong>Dataset</strong></label><br>
-      <select id="dataset" name="dataset" onchange="onDatasetChange()" required>
-        <option value="">-- choose dataset --</option>
-        {% for d in datasets %}<option value="{{ d }}">{{ d }}</option>{% endfor %}
-      </select>
+      <form action="/submit" method="post" enctype="multipart/form-data">
+        <div class="grid">
+          <!-- DATASET CARD -->
+          <div class="card">
+            <h3>Dataset</h3>
+            <p class="muted">Pick a mission dataset (K2, TESS, Kepler) or upload a CSV/Parquet of your own.</p>
 
-      <div id="fileRow" style="display:none; margin-top:8px">
-        <label><strong>Upload your dataset</strong> (CSV or Parquet):</label>
-        <input type="file" name="datafile" accept=".csv,.parquet">
-        <div class="muted">Only required when "Other" is selected.</div>
-      </div>
+            <label for="dataset">Select a dataset</label>
+            <select id="dataset" name="dataset" onchange="onDatasetChange()" required>
+              <option value="">— choose dataset —</option>
+              {% for d in datasets %}<option value="{{ d }}">{{ d }}</option>{% endfor %}
+            </select>
 
-      <div id="modelRow" style="display:none; margin-top:12px">
-        <label><strong>Model</strong></label><br>
-        <select id="model" name="model" onchange="onModelChange()" required>
-          <option value="">-- choose model --</option>
-          {% for m in models %}<option value="{{ m }}">{{ m }}</option>{% endfor %}
-        </select>
+            <div id="fileRow" style="display:none; margin-top:10px">
+              <label for="datafile">Upload your dataset</label>
+              <input id="datafile" type="file" name="datafile" accept=".csv,.parquet">
+              <div class="muted">Only required when <strong>Other</strong> is selected.</div>
+            </div>
+          </div>
 
-        <!-- Model details appear here -->
-        <div id="modelInfo" class="info-box" style="display:none; margin-top:12px">
-          <div id="modelSummary" class="muted"></div>
-          <ul style="margin-top:8px">
-            <li><strong>Pros:</strong> <span id="modelPros"></span></li>
-            <li><strong>Cons:</strong> <span id="modelCons"></span></li>
-          </ul>
+          <!-- MODEL CARD -->
+          <div class="card" id="modelRow" style="display:none">
+            <h3>Model</h3>
+            <p class="muted">Choose a modeling family. A quick summary and trade-offs will appear below.</p>
+
+            <label for="model">Select a model</label>
+            <select id="model" name="model" onchange="onModelChange()" required>
+              <option value="">— choose model —</option>
+              {% for m in models %}<option value="{{ m }}">{{ m }}</option>{% endfor %}
+            </select>
+
+            <!-- Model details -->
+            <div id="modelInfo" class="info-box" aria-live="polite">
+              <div class="kicker">Model overview</div>
+              <div id="modelSummary" class="muted" style="margin-top:6px"></div>
+              <div class="proscons">
+                <div>
+                  <strong>Pros</strong>
+                  <ul id="modelPros"></ul>
+                </div>
+                <div>
+                  <strong>Cons</strong>
+                  <ul id="modelCons"></ul>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
 
-      <p><button type="submit" style="margin-top:12px">Continue</button></p>
-    </form>
+        <div class="actions">
+          <button type="submit" class="btn">Continue</button>
+        </div>
+      </form>
+    </div>
 
     <script>
-      // Passed in from Flask
-      const MODEL_DESCRIPTIONS = {{ model_descriptions | tojson }};
+      // Descriptions from Flask
+      const MODEL_DESCRIPTIONS = {{ model_descriptions | tojson | safe }};
 
       function onDatasetChange() {
-        const ds = document.getElementById('dataset').value;
+        const ds = (document.getElementById('dataset').value || '').trim();
         document.getElementById('fileRow').style.display = (ds === 'Other') ? 'block' : 'none';
-        document.getElementById('modelRow').style.display = (ds ? 'block' : 'none');
-        // If dataset cleared, also hide model info
-        if (!ds) { document.getElementById('modelInfo').style.display = 'none'; }
+        document.getElementById('modelRow').style.display = ds ? 'block' : 'none';
+        if (!ds) document.getElementById('modelInfo').style.display = 'none';
       }
 
       function onModelChange() {
-        const sel = document.getElementById('model');
-        const model = sel.value;
+        const model = document.getElementById('model').value;
         const box = document.getElementById('modelInfo');
-        if (MODEL_DESCRIPTIONS[model]) {
+        const prosEl = document.getElementById('modelPros');
+        const consEl = document.getElementById('modelCons');
+        prosEl.innerHTML = ''; consEl.innerHTML = '';
+
+        if (MODEL_DESCRIPTIONS && MODEL_DESCRIPTIONS[model]) {
           const info = MODEL_DESCRIPTIONS[model];
           document.getElementById('modelSummary').textContent = info.summary || '';
-          document.getElementById('modelPros').textContent = (info.pros || []).join(', ');
-          document.getElementById('modelCons').textContent = (info.cons || []).join(', ');
+          (info.pros || []).forEach(p => { const li=document.createElement('li'); li.textContent=p; prosEl.appendChild(li); });
+          (info.cons || []).forEach(c => { const li=document.createElement('li'); li.textContent=c; consEl.appendChild(li); });
           box.style.display = 'block';
         } else {
           box.style.display = 'none';
         }
       }
 
-      // Initialize on first load
       window.addEventListener('DOMContentLoaded', () => {
         onDatasetChange();
         onModelChange();
