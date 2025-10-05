@@ -11,9 +11,8 @@ Tasks to do
 - [X] upload/input data to be predicted on
 - [X] show results with metrics -> abililty to download the csv
 - [X] Add helps + descriptions for everything 
-- [ ] make the project look nicer
-- [ ] Fix the column selection to be better -> maybe description of columns?
-- [ ] Fix adaboost algorithm selection
+- [X] make the project look nicer
+- [X] Fix adaboost algorithm selection
 - [ ] select all button -> the selected y should not come up in the feature list on the right -> select all that is visible button
 - [ ] fix the blurry thing on hyper tuning page
 - [ ] look into regularization in NN and ridge/lasso
@@ -24,6 +23,7 @@ Tasks to do
 Nice to have
 - [ ] give freedom to add columns by feature engineering
 - [ ] improve the helps in PARAM SCHEMAS
+- [ ] Fix the column selection to be better -> maybe description of columns?
 
 
 
