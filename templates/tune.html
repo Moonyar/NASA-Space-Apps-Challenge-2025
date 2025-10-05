@@ -1,38 +1,175 @@
 <!doctype html>
-<html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Exoplanet Classifier — Tune Hyperparameters</title>
+    <style>
+      :root{
+        --bg:#0b1021; --bg2:#0f1530; --card:#121a3b; --card2:#0f1733;
+        --text:#e9edf8; --muted:#b7c1d6; --accent:#7aa2ff; --danger:#ff6b6b;
+        --radius:14px; --shadow:0 20px 50px rgba(0,0,0,.45);
+      }
+      *{box-sizing:border-box}
+      html,body{height:100%}
+      body{
+        margin:0;
+        font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+        color:var(--text);
+        background:
+          linear-gradient(180deg, rgba(7,10,20,.55), rgba(10,14,30,.78)),
+          url("{{ url_for('static', filename='fun_background.svg') }}") center/cover no-repeat fixed;
+      }
+      .viewport{min-height:100svh; display:grid; place-items:center; padding:24px}
+      .wrap{max-width:1080px; width:100%}
+
+      /* Hero */
+      .page-hero{padding:8px 20px 0}
+      .page-hero h1{margin:0 0 6px; font-size: clamp(26px, 3.6vw, 40px); text-shadow: 0 6px 30px rgba(0,0,0,.45)}
+      .tagline{color:var(--muted); margin:0 0 10px}
+      .pill{
+        display:inline-block; padding:6px 10px; border-radius:999px;
+        background: rgba(122,162,255,.12); color:#deebff; border:1px solid rgba(122,162,255,.28);
+        font-size:.85rem; backdrop-filter: blur(2px);
+      }
+
+      /* Layout */
+      .grid{display:grid; grid-template-columns: 1fr 1fr; gap:20px; margin-top:18px; padding:0 20px}
+      .card{
+        background: linear-gradient(180deg, rgba(12,18,42,.85), rgba(11,17,38,.82));
+        border:1px solid rgba(255,255,255,.08);
+        border-radius: var(--radius); padding:20px; box-shadow: var(--shadow);
+      }
+      .card h3{margin:0 0 12px; font-size:1.1rem}
+      .muted{color:var(--muted)}
+      .small{font-size:.9rem; color:var(--muted)}
+      label{font-weight:600; display:block; margin-bottom:8px}
+
+      /* Form controls */
+      select, input[type="text"], input[type="number"], button{
+        width:100%; background: var(--card2); border:1px solid rgba(255,255,255,.14);
+        color:var(--text); border-radius:12px; padding:10px 12px; font-size:1rem;
+        transition: box-shadow .15s ease, border-color .15s ease, transform .02s ease;
+      }
+      select:focus, input[type="text"]:focus, input[type="number"]:focus, button:focus{
+        outline:none; box-shadow: 0 0 0 3px rgba(122,162,255,.25); border-color: var(--accent)
+      }
+      select:hover, input[type="text"]:hover, input[type="number"]:hover{border-color: rgba(255,255,255,.25)}
+
+      .param{
+        border:1px solid rgba(255,255,255,.12);
+        border-radius:12px; padding:12px; margin-bottom:12px;
+        background: rgba(15,23,51,.45);
+      }
+      .param .help{margin-top:6px}
+
+      /* L1/L2 card */
+      .options{display:flex; gap:12px; flex-wrap:wrap; margin-top:8px}
+      .radio{
+        display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:999px;
+        border:1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.04);
+      }
+
+      /* Footer */
+      .footer{padding:18px 20px}
+      .btn{
+        display:inline-flex; align-items:center; justify-content:center; gap:10px; padding:12px 16px; border-radius:12px;
+        background:#76949F; color:#0b1021; border:0; font-weight:700; cursor:pointer;
+        box-shadow: 0 10px 30px #6A6B83; transition: all 0.3s ease;
+      }
+      .btn:hover{transform: translateY(-1px); background:#86BBBD}
+
+      @media (max-width: 980px){
+        .grid{grid-template-columns: 1fr}
+      }
+    </style>
+  </head>
   <body>
-    <h2>Tune hyperparameters — {{ model }}</h2>
-    <p><em>{{ model_info.summary }}</em></p>
-    <ul>
-      <li><strong>Pros:</strong> {{ model_info.pros | join(", ") }}</li>
-      <li><strong>Cons:</strong> {{ model_info.cons | join(", ") }}</li>
-    </ul>
-    <form method="post" action="/tune">
-      <h3>Model parameters</h3>
-      {% for p in schema %}
-        <div style="margin-bottom:10px">
-          <label><strong>{{ p.name }}</strong></label><br>
-          {% if p.type == 'choice' %}
-            <select name="{{ p.name }}">
-              {% for ch in p.choices %}<option value="{{ ch }}" {% if ch == p.default %}selected{% endif %}>{{ ch }}</option>{% endfor %}
-            </select>
-          {% else %}
-            <input name="{{ p.name }}" value="{{ p.default if p.default is not none else '' }}" placeholder="{{ p.type }}">
-          {% endif %}
-          {% if p.help %}<div style="color:#666;font-size:.9em">{{ p.help }}</div>{% endif %}
-        </div>
-      {% endfor %}
-      <h3>Optional feature selection (L1/L2)</h3>
-      <p style="color:#666">{{ l1l2_help }}</p>
-      <label><input type="radio" name="fs_method" value="none" checked> None</label>
-      <label><input type="radio" name="fs_method" value="lasso"> Lasso (L1)</label>
-      <label><input type="radio" name="fs_method" value="ridge"> Ridge (L2)</label>
-      <div style="margin-top:8px">
-        <label>Selection strength C:</label>
-        <input type="number" step="0.1" name="fs_C" value="1.0">
-        <div style="color:#666;font-size:.9em">Smaller C = stronger regularization (fewer features kept).</div>
+    <div class="viewport">
+      <div class="wrap">
+        <!-- HERO -->
+        <header class="page-hero">
+          <h1>Tune hyperparameters — {{ model }}</h1>
+          <p class="tagline">Refine your vessel before launch. Choose sensible defaults, then iterate.</p>
+          <span class="pill">Step 3 of 5 — Hyperparameters & feature selection</span>
+        </header>
+
+        <form method="post" action="/tune" novalidate>
+          <div class="grid">
+            <!-- Left: Model overview -->
+            <section class="card">
+              <h3>Model overview</h3>
+              <p class="muted"><em>{{ model_info.summary }}</em></p>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:10px">
+                <div>
+                  <strong>Pros</strong>
+                  <ul class="small" style="margin:8px 0 0 18px; padding:0">
+                    {% for p in model_info.pros %}<li>{{ p }}</li>{% endfor %}
+                  </ul>
+                </div>
+                <div>
+                  <strong>Cons</strong>
+                  <ul class="small" style="margin:8px 0 0 18px; padding:0">
+                    {% for c in model_info.cons %}<li>{{ c }}</li>{% endfor %}
+                  </ul>
+                </div>
+              </div>
+
+              {% if model == 'LogisticRegression' %}
+                <p class="small" style="margin-top:12px">
+                  Note: Logistic Regression uses <strong>L2</strong> here by default.  
+                  To explore L1/L2 effects, use the <em>Optional feature selection</em> card.
+                </p>
+              {% endif %}
+            </section>
+
+            <!-- Right: Model parameters -->
+            <section class="card">
+              <h3>Model parameters</h3>
+              <p class="small">You can start with defaults and adjust as needed. Leave a field blank to keep the default.</p>
+
+              {% for p in schema %}
+                <div class="param">
+                  <label for="param_{{ p.name }}">{{ p.name }}</label>
+                  {% if p.type == 'choice' %}
+                    <select id="param_{{ p.name }}" name="{{ p.name }}">
+                      {% for ch in p.choices %}
+                        <option value="{{ ch }}" {% if ch == p.default %}selected{% endif %}>{{ ch }}</option>
+                      {% endfor %}
+                    </select>
+                  {% else %}
+                    <input id="param_{{ p.name }}"
+                           name="{{ p.name }}"
+                           value="{{ p.default if p.default is not none else '' }}"
+                           placeholder="{{ p.type }}">
+                  {% endif %}
+                  {% if p.help %}<div class="help small">{{ p.help }}</div>{% endif %}
+                </div>
+              {% endfor %}
+            </section>
+          </div>
+
+          <!-- Full-width: L1/L2 feature selection -->
+          <section class="card" style="margin:20px">
+            <h3>Optional feature selection (L1 / L2)</h3>
+            <p class="small">{{ l1l2_help }}</p>
+            <div class="options" role="radiogroup" aria-label="Feature selection method">
+              <label class="radio"><input type="radio" name="fs_method" value="none" checked> None</label>
+              <label class="radio"><input type="radio" name="fs_method" value="lasso"> Lasso (L1)</label>
+              <label class="radio"><input type="radio" name="fs_method" value="ridge"> Ridge (L2)</label>
+            </div>
+            <div style="display:grid; grid-template-columns: 1fr 2fr; gap:12px; margin-top:12px; align-items:center">
+              <label for="fs_C">Selection strength C</label>
+              <input id="fs_C" type="number" step="0.1" name="fs_C" value="1.0" />
+            </div>
+            <p class="small" style="margin-top:6px">Smaller C = stronger regularization (fewer features kept).</p>
+          </section>
+
+          <div class="footer">
+            <button type="submit" class="btn">Next: Train/Test split</button>
+          </div>
+        </form>
       </div>
-      <p><button type="submit" style="margin-top:12px">Next: Train/Test split</button></p>
-    </form>
+    </div>
   </body>
 </html>

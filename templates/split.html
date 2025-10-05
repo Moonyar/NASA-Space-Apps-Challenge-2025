@@ -1,16 +1,162 @@
 <!doctype html>
-<html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Exoplanet Classifier — Train/Test Split</title>
+    <style>
+      :root{
+        --bg:#0b1021; --bg2:#0f1530; --card:#121a3b; --card2:#0f1733;
+        --text:#e9edf8; --muted:#b7c1d6; --accent:#7aa2ff; --danger:#ff6b6b;
+        --radius:14px; --shadow:0 20px 50px rgba(0,0,0,.45);
+      }
+      *{box-sizing:border-box}
+      html,body{height:100%}
+      body{
+        margin:0;
+        font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+        color:var(--text);
+        background:
+          linear-gradient(180deg, rgba(7,10,20,.55), rgba(10,14,30,.78)),
+          url("{{ url_for('static', filename='fun_background.svg') }}") center/cover no-repeat fixed;
+      }
+      .viewport{min-height:100svh; display:grid; place-items:center; padding:24px}
+      .wrap{max-width:860px; width:100%}
+
+      /* Hero */
+      .page-hero{padding:8px 20px 0}
+      .page-hero h1{margin:0 0 6px; font-size: clamp(26px, 3.6vw, 40px); text-shadow: 0 6px 30px rgba(0,0,0,.45)}
+      .tagline{color:var(--muted); margin:0 0 10px}
+      .pill{
+        display:inline-block; padding:6px 10px; border-radius:999px;
+        background: rgba(122,162,255,.12); color:#deebff; border:1px solid rgba(122,162,255,.28);
+        font-size:.85rem; backdrop-filter: blur(2px);
+      }
+
+      .card{
+        background: linear-gradient(180deg, rgba(12,18,42,.85), rgba(11,17,38,.82));
+        border:1px solid rgba(255,255,255,.08);
+        border-radius: var(--radius); padding:20px; box-shadow: var(--shadow);
+        margin:18px 20px 0;
+      }
+      .card h3{margin:0 0 10px; font-size:1.1rem}
+      .muted{color:var(--muted)}
+      label{font-weight:600; display:block; margin-bottom:10px}
+
+      .row{display:grid; grid-template-columns: 1fr; gap:12px; margin-top:10px}
+      .subtle{font-size:.9rem; color:var(--muted)}
+
+      input[type="number"], input[type="range"], button{
+        width:100%; background: var(--card2); border:1px solid rgba(255,255,255,.14);
+        color:var(--text); border-radius:12px; padding:10px 12px; font-size:1rem;
+        transition: box-shadow .15s ease, border-color .15s ease, transform .02s ease;
+      }
+      input[type="number"]:focus, input[type="range"]:focus, button:focus{
+        outline:none; box-shadow: 0 0 0 3px rgba(122,162,255,.25); border-color: var(--accent)
+      }
+      input[type="range"]{padding:8px 0; cursor:pointer; background: transparent}
+
+      .split-controls[aria-disabled="true"]{
+        opacity:.55; pointer-events:none;
+      }
+
+      .footer{padding:18px 20px}
+      .btn{
+        display:inline-flex; align-items:center; justify-content:center; gap:10px; padding:12px 16px; border-radius:12px;
+        background:#76949F; color:#0b1021; border:0; font-weight:700; cursor:pointer;
+        box-shadow: 0 10px 30px #6A6B83; transition: all 0.3s ease;
+      }
+      .btn:hover{transform: translateY(-1px); background:#86BBBD}
+    </style>
+  </head>
   <body>
-    <h2>Train/Test Split</h2>
-    <p>Optionally evaluate with a split before training on all data.</p>
-    <form method="post" action="/run">
-      <label><input type="checkbox" name="do_split" checked> Perform train/test split</label>
-      <div style="margin-top:8px">
-        <label>Train size (0.5 to 0.95):</label>
-        <input type="number" name="train_size" step="0.05" min="0.5" max="0.95" value="0.8">
-        <div style="color:#666;font-size:.9em">0.8 means 80% train / 20% test. Metrics shown on the next page.</div>
+    <div class="viewport">
+      <div class="wrap">
+        <!-- HERO -->
+        <header class="page-hero">
+          <h1>Train/Test Split</h1>
+          <p class="tagline">Optionally evaluate with a split before training on all data.</p>
+          <span class="pill">Step 4 of 5 — Split & evaluate</span>
+        </header>
+
+        <form method="post" action="/run" novalidate>
+          <section class="card">
+            <h3>Evaluation options</h3>
+            <label class="subtle" style="display:flex; align-items:center; gap:10px; font-weight:600">
+              <input id="do_split" type="checkbox" name="do_split" checked>
+              Perform train/test split
+            </label>
+
+            <div id="splitControls" class="split-controls" aria-disabled="false">
+              <div class="row">
+                <div>
+                  <label for="train_size">Train size (0.50–0.95)</label>
+                  <!-- Number input (this is the one posted to the server) -->
+                  <input id="train_size" type="number" name="train_size" step="0.05" min="0.5" max="0.95" value="0.8">
+                  <div class="subtle">Tip: 0.80 means 80% train / 20% test.</div>
+                </div>
+
+                <div>
+                  <!-- UI-only range slider (kept in sync; no name attribute) -->
+                  <input id="train_slider" type="range" min="0.5" max="0.95" step="0.05" value="0.8" aria-label="Train size slider">
+                  <div class="subtle" id="splitText">Train 80% · Test 20%</div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <div class="footer">
+            <button type="submit" class="btn">Run</button>
+          </div>
+        </form>
       </div>
-      <p><button type="submit" style="margin-top:12px">Run</button></p>
-    </form>
+    </div>
+
+    <script>
+      const chk = document.getElementById('do_split');
+      const ctrl = document.getElementById('splitControls');
+      const num = document.getElementById('train_size');
+      const rng = document.getElementById('train_slider');
+      const txt = document.getElementById('splitText');
+
+      function clamp(v){ return Math.min(0.95, Math.max(0.5, v)); }
+      function roundStep(v){ return Math.round(v / 0.05) * 0.05; }
+
+      function updateText(){
+        const train = parseFloat(num.value || '0.8');
+        const test = 1 - train;
+        txt.textContent = `Train ${Math.round(train*100)}% · Test ${Math.round(test*100)}%`;
+      }
+
+      function syncFromRange(){
+        const v = clamp(parseFloat(rng.value || '0.8'));
+        num.value = v.toFixed(2);
+        updateText();
+      }
+
+      function syncFromNumber(){
+        let v = clamp(parseFloat(num.value || '0.8'));
+        v = roundStep(v);
+        num.value = v.toFixed(2);
+        rng.value = v.toFixed(2);
+        updateText();
+      }
+
+      function toggleSplit(){
+        const on = chk.checked;
+        ctrl.setAttribute('aria-disabled', on ? 'false' : 'true');
+      }
+
+      // Init
+      document.addEventListener('DOMContentLoaded', () => {
+        syncFromNumber();
+        toggleSplit();
+      });
+
+      // Wire up
+      rng.addEventListener('input', syncFromRange);
+      num.addEventListener('input', syncFromNumber);
+      chk.addEventListener('change', toggleSplit);
+    </script>
   </body>
 </html>
