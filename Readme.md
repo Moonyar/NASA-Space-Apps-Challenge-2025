@@ -13,6 +13,7 @@ Tasks to do
 - [X] Add helps + descriptions for everything 
 - [ ] make the project look nicer
 - [ ] Fix the column selection to be better -> maybe description of columns?
+- [ ] Fix adaboost algorithm selection
 - [ ] finish submission
 
 Nice to have
