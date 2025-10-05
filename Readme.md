@@ -16,6 +16,7 @@ Tasks to do
 - [ ] Fix adaboost algorithm selection
 - [ ] select all button -> the selected y should not come up in the feature list on the right
 - [ ] fix the blurry thing on hyper tuning page
+- [ ] look into regularization in NN and ridge/lasso
 - [ ] finish submission
 
 Nice to have
