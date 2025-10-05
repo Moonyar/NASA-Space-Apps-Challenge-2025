@@ -18,6 +18,7 @@ Tasks to do
 - [ ] fix the blurry thing on hyper tuning page
 - [ ] look into regularization in NN and ridge/lasso
 - [ ] in the fs section add a hint: use only if NN or log reg because other models really don't do better with it.
+- [ ] look into which columns to choose for the demo
 - [ ] finish submission
 
 Nice to have
