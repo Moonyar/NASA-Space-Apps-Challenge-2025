@@ -21,10 +21,7 @@ This Project was done for NASA's 2025 Space Apps Challenge!
 - [Model artifacts & downloads](#model-artifacts--downloads)
 - [Make predictions outside the app](#make-predictions-outside-the-app)
 - [Security notes](#security-notes)
-- [Troubleshooting / FAQ](#troubleshooting--faq)
 - [Roadmap](#roadmap)
-- [Contributing](#contributing)
-- [License](#license)
 - [Citation / Acknowledgments](#citation--acknowledgments)
 
 ---
