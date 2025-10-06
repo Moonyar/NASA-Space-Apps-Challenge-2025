@@ -1,5 +1,3 @@
-This Project was done for NASA's 2025 Space Apps Challenge!
-
 # Mission Control for Exoplanets 🚀
 *A reproducible, cloud-hosted ML dashboard for classifying exoplanet candidates from K2/TESS/Kepler (or your own data).*
 
